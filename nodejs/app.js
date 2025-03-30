@@ -1,11 +1,24 @@
-const express = require('express')
-const app = express()
-const port = 3000
+import express from 'express';
+import supabase from './supabase.js';
 
-app.get('/', (req, res) => {
-  res.send('Olá Mundo!')
-})
+const app = express();
+app.use(express.json());
 
-app.listen(port, () => {
-  console.log(`Exemplo de app rodando em http://localhost:${port}`)
-})
+// Teste de conexão com o Supabase na inicialização
+app.get('/testar-conexao', async (req, res) => {
+    try {
+        const { data, error } = await supabase.from('usuario').select('*');
+        if (error) {
+            return res.status(500).json({ error: error.message });
+        }
+        res.json({ message: 'Conexão bem-sucedida!', data });
+    } catch (err) {
+        res.status(500).json({ error: 'Erro ao conectar com o Supabase', details: err.message });
+    }
+});
+
+// 🔹 Iniciar servidor
+const PORT = 3000;
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});

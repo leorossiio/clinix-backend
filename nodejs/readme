@@ -1,0 +1,33 @@
+Migration:
+-- Criar tabela de Usuário
+CREATE TABLE usuario (
+    id_usuario SERIAL PRIMARY KEY,
+    nome TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    senha TEXT NOT NULL,
+    tipo_usuario INTEGER CHECK (tipo_usuario IN (0, 1)) NOT NULL, -- 0 = Paciente, 1 = Médico
+    status INTEGER CHECK (status IN (0, 1)) NOT NULL -- 0 = Inativo, 1 = Ativo
+);
+
+-- Criar tabela de Consulta
+CREATE TABLE consulta (
+    id_consulta SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+    data DATE NOT NULL,
+    horario TIME NOT NULL,
+    status_consulta INTEGER CHECK (status_consulta IN (0, 1, 2)) NOT NULL -- 0 = Agendada, 1 = Realizada, 2 = Cancelada
+);
+
+-- Criar tabela de Notificação
+CREATE TABLE notificacao (
+    id_notificacao SERIAL PRIMARY KEY,
+    id_consulta INTEGER REFERENCES consulta(id_consulta) ON DELETE CASCADE,
+    data TIMESTAMP DEFAULT now(),
+    lembrete TEXT NOT NULL
+);
+
+Principais comandos:
+1- npm i
+2- npm install pg
+3- npm install @supabase/supabase-js
+4- npm install dotenv
