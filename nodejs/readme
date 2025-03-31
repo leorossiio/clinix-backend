@@ -1,4 +1,5 @@
 Migration:
+
 -- Criar tabela de Usuário
 CREATE TABLE usuario (
     id_usuario SERIAL PRIMARY KEY,
@@ -9,12 +10,22 @@ CREATE TABLE usuario (
     status INTEGER CHECK (status IN (0, 1)) NOT NULL -- 0 = Inativo, 1 = Ativo
 );
 
+-- Criar tabela de Médico
+CREATE TABLE medico (
+    id_medico SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+    especialidade TEXT NOT NULL,
+    crm TEXT UNIQUE NOT NULL
+);
+
 -- Criar tabela de Consulta
 CREATE TABLE consulta (
     id_consulta SERIAL PRIMARY KEY,
     id_usuario INTEGER REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+    id_medico INTEGER REFERENCES medico(id_medico) ON DELETE CASCADE,
     data DATE NOT NULL,
     horario TIME NOT NULL,
+    tipo_atendimento TEXT NOT NULL,
     status_consulta INTEGER CHECK (status_consulta IN (0, 1, 2)) NOT NULL -- 0 = Agendada, 1 = Realizada, 2 = Cancelada
 );
 
@@ -22,6 +33,7 @@ CREATE TABLE consulta (
 CREATE TABLE notificacao (
     id_notificacao SERIAL PRIMARY KEY,
     id_consulta INTEGER REFERENCES consulta(id_consulta) ON DELETE CASCADE,
+    id_usuario INTEGER REFERENCES usuario(id_usuario) ON DELETE CASCADE,
     data TIMESTAMP DEFAULT now(),
     lembrete TEXT NOT NULL
 );

@@ -4,7 +4,6 @@ import supabase from './supabase.js';
 const app = express();
 app.use(express.json());
 
-// Teste de conexão com o Supabase na inicialização
 app.get('/testar-conexao', async (req, res) => {
     try {
         const { data, error } = await supabase.from('usuario').select('*');
@@ -17,7 +16,7 @@ app.get('/testar-conexao', async (req, res) => {
     }
 });
 
-// 🔹 Iniciar servidor
+// Iniciar servidor
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
