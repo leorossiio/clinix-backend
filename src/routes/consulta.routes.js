@@ -1,20 +1,20 @@
 import express from 'express';
-import supabase from '../supabase.js';
+import {
+    listarConsultas,
+    obterConsulta,
+    criarConsulta,
+    editarConsulta,
+    excluirConsulta
+} from '../controllers/consulta.controller.js';
+
+import { validarConsulta } from '../middlewares/validar.consulta.js';
 
 const router = express.Router();
 
-// Listar todas as consultas
-router.get('/', async (req, res) => {
-    const { data, error } = await supabase.from('consulta').select('*');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-// Criar nova consulta
-router.post('/', async (req, res) => {
-    const { data, error } = await supabase.from('consulta').insert([req.body]);
-    if (error) return res.status(500).json({ error: error.message });
-    res.status(201).json(data);
-});
+router.get('/', listarConsultas);               // Lista todas
+router.get('/:id', obterConsulta);              // Busca por ID
+router.post('/', validarConsulta, criarConsulta); // Cria nova
+router.put('/:id', validarConsulta, editarConsulta); // Edita
+router.delete('/:id', excluirConsulta);          // Deleta
 
 export default router;

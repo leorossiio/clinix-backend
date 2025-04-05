@@ -1,20 +1,10 @@
 import express from 'express';
-import supabase from '../supabase.js';
+import { listarNotificacoes, criarNotificacao } from '../controllers/notificacao.controller.js';
+import { validarNotificacao } from '../middlewares/validar.notificacao.js';
 
 const router = express.Router();
 
-// Listar notificações
-router.get('/', async (req, res) => {
-    const { data, error } = await supabase.from('notificacao').select('*');
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-});
-
-// Criar nova notificação
-router.post('/', async (req, res) => {
-    const { data, error } = await supabase.from('notificacao').insert([req.body]);
-    if (error) return res.status(500).json({ error: error.message });
-    res.status(201).json(data);
-});
+router.get('/', listarNotificacoes);
+router.post('/', validarNotificacao, criarNotificacao);
 
 export default router;
