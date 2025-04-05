@@ -3,7 +3,7 @@ CREATE TABLE Usuario (
     ID_usuario SERIAL PRIMARY KEY,
     Status BOOLEAN NOT NULL,
     Nome VARCHAR(100) NOT NULL,
-    Tipo_usuario VARCHAR(50) NOT NULL,
+    Tipo_usuario INT NOT NULL,
     Senha VARCHAR(255) NOT NULL,
     Email VARCHAR(100) NOT NULL UNIQUE,
     Especialidade VARCHAR(100),
