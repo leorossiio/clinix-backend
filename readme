@@ -12,6 +12,5 @@ Principais comandos:
 ├── repositories      # Comunicação com o banco
 ├── middlewares       # Autenticação, validação etc.
 ├── models            # (Opcional)
-├── prisma            # Schema, migrations, client do Prisma
-├── utils             # Helpers, funções utilitárias
-└── config            # Configurações globais, env, database
+├── migrations            # Schema, migrations, client do Prisma
+└── utils             # Helpers, funções utilitárias
