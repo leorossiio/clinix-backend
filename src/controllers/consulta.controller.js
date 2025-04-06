@@ -1,7 +1,7 @@
 import {
     buscarTodasConsultas,
     buscarConsultaPorId,
-    inserirConsulta,
+    adicionarConsulta,
     atualizarConsulta,
     deletarConsulta
 } from '../repositories/consulta.repository.js';
@@ -33,19 +33,17 @@ export const obterConsulta = async (req, res) => {
 export const criarConsulta = async (req, res) => {
     const novoId = uuidv4();
 
-    // Checa se esse UUID já existe (raro, mas por segurança)
     const { data: consultaExistente } = await buscarConsultaPorId(novoId);
     if (consultaExistente) {
         return res.status(400).json({ error: 'ID gerado já está em uso. Tente novamente.' });
     }
 
-    // Junta o id gerado com os dados do body
     const novaConsulta = {
         id: novoId,
         ...req.body
     };
 
-    const { data, error } = await inserirConsulta(novaConsulta);
+    const { data, error } = await adicionarConsulta(novaConsulta);
     if (error) return res.status(500).json({ error: error.message });
 
     res.status(201).json(data);
