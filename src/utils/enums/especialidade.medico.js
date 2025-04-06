@@ -1,4 +1,4 @@
-export const ESPECIALIDADES = {
+export const EspecialidaeMedica = {
     0: 'Cardiologia',
     1: 'Pediatria',
     2: 'Ortopedia',

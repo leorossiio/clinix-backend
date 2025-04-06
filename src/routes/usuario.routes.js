@@ -6,14 +6,14 @@ import {
   editarUsuario,
   excluirUsuario
 } from '../controllers/usuario.controller.js';
-import { validarUsuarioUpdate } from '../middlewares/validar.usuario.atualizar.js';
+// import { validarUsuarioUpdate, validarUsuario } from '../middlewares/index.js';
 
 const router = express.Router();
 
 router.get('/', listarUsuarios);
 router.get('/:id', obterUsuarioPorId);
 router.post('/', adicionarUsuario);
-router.put('/:id', validarUsuarioUpdate, editarUsuario);
+router.put('/:id', editarUsuario);
 router.delete('/:id', excluirUsuario);
 
 export default router;

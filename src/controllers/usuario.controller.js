@@ -7,7 +7,7 @@ import {
   excluirUsuarioStatus,
   buscarUsuarioPorEmail
 } from '../repositories/usuario.repository.js';
-import { ESPECIALIDADES, STATUS, TIPO } from '../utils/enums/index.js';
+import { EspecialidaeMedica, StatusUsuario, tipoUsuario } from '../utils/enums/index.js';
 
 
 export const listarUsuarios = async (req, res) => {
@@ -33,34 +33,33 @@ export const adicionarUsuario = async (req, res) => {
     email,
     senha,
     tipo_usuario,
-    status = STATUS.ATIVO,
+    status = StatusUsuario.ATIVO,
     especialidade = null,
     crm = null
   } = req.body;
 
   // Validação do tipo
-  if (![TIPO.USUARIO, TIPO.MEDICO, TIPO.ADMIN].includes(tipo_usuario)) {
+  if (![tipoUsuario.USUARIO, tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(tipo_usuario)) {
     return res.status(400).json({ error: 'Tipo inválido.' });
   }
 
   // Validação da especialidade
-  if (especialidade !== null && !Object.keys(ESPECIALIDADES).includes(String(especialidade))) {
+  if (especialidade !== null && !Object.keys(EspecialidaeMedica).includes(String(especialidade))) {
     return res.status(400).json({ error: 'Especialidade inválida.' });
   }
 
   // Verifica se o usuário já existe pelo e-mail
   const { data: usuarioExistente, error } = await buscarUsuarioPorEmail(email);
-
   if (error) return res.status(500).json({ error: 'Erro ao verificar e-mail existente.' });
 
   if (usuarioExistente) {
-    if (usuarioExistente.status === STATUS.DELETADO) {
+    if (usuarioExistente.status === StatusUsuario.DELETADO) {
       // Reativa o usuário
       const { error: reativarError } = await atualizarUsuario(usuarioExistente.id_usuario, {
         nome,
         senha,
         tipo_usuario,
-        status: STATUS.ATIVO,
+        status: StatusUsuario.ATIVO,
         especialidade,
         crm
       });
@@ -88,7 +87,6 @@ export const adicionarUsuario = async (req, res) => {
   };
 
   const { data, error: insertError } = await adicionarNovoUsuario(novoUsuario);
-
   if (insertError) return res.status(500).json({ error: insertError.message });
 
   res.status(201).json(data);

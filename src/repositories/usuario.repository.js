@@ -1,8 +1,8 @@
 import supabase from '../supabase.js';
-import { STATUS } from '../utils/enums/index.js';
+import { StatusUsuario } from '../utils/enums/index.js';
 
 export const buscarTodosUsuarios = async () => {
-  return await supabase.from('usuario').select('*').eq('status', STATUS.ATIVO);
+  return await supabase.from('usuario').select('*').eq('status', StatusUsuario.ATIVO);
 };
 
 export const buscarUsuarioPorId = async (id_usuario) => {
@@ -24,7 +24,7 @@ export const deletarUsuario = async (id_usuario) => {
 export const excluirUsuarioStatus = async (id_usuario) => {
   const { data, error } = await supabase
     .from('usuario')
-    .update({ status: STATUS.DELETADO })
+    .update({ status: StatusUsuario.DELETADO })
     .eq('id_usuario', id_usuario);
 
   return { data, error };
