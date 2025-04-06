@@ -1,20 +1,25 @@
 import express from 'express';
 import {
     listarConsultas,
-    obterConsulta,
+    listarConsultasUsuario,
+    obterConsultaPorId,
     criarConsulta,
     editarConsulta,
     excluirConsulta
 } from '../controllers/consulta.controller.js';
 
-import { validarConsulta } from '../middlewares/validar.consulta.js';
+import { autenticacao } from '../middlewares/auth.middleware.js';
+import { autorizar } from '../middlewares/auth.middleware.js';
+
+import { tipoUsuario } from '../utils/enums/index.js';
 
 const router = express.Router();
 
-router.get('/', listarConsultas);               // Lista todas
-router.get('/:id', obterConsulta);              // Busca por ID
-router.post('/', validarConsulta, criarConsulta); // Cria nova
-router.put('/:id', validarConsulta, editarConsulta); // Edita
-router.delete('/:id', excluirConsulta);          // Deleta
+router.get('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), listarConsultas); // admin ou medico
+router.get('/usuario', autenticacao, autorizar(tipoUsuario.USUARIO), listarConsultasUsuario); // cliente
+router.get('/:id', obterConsultaPorId); // sem autenticação por enquanto
+router.post('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), criarConsulta);
+router.put('/:id', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), editarConsulta);
+router.delete('/:id', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), excluirConsulta);
 
 export default router;

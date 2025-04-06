@@ -1,10 +1,13 @@
 import {
     buscarTodasConsultas,
+    buscarTodasConsultasUsuario,
     buscarConsultaPorId,
     adicionarConsulta,
     atualizarConsulta,
-    deletarConsulta
+    excluirConsultaStatus,
+    buscarConsultaPorMedicoComStatus
 } from '../repositories/consulta.repository.js';
+import { StatusConsulta, tipoUsuario } from '../utils/enums/index.js';
 
 import { v4 as uuidv4 } from 'uuid';
 import Joi from 'joi';
@@ -13,12 +16,26 @@ import Joi from 'joi';
 const schemaId = Joi.string().uuid();
 
 export const listarConsultas = async (req, res) => {
+  if (![tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: 'Acesso não autorizado.' });
+  }
+
     const { data, error } = await buscarTodasConsultas();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
 };
 
-export const obterConsulta = async (req, res) => {
+export const listarConsultasUsuario = async (req, res) => {
+  if (!tipoUsuario.USUARIO.includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: 'Acesso não autorizado.' });
+  }
+
+    const { data, error } = await buscarTodasConsultasUsuario();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+};
+
+export const obterConsultaPorId = async (req, res) => {
     const { id } = req.params;
 
     const { error } = schemaId.validate(id);
@@ -31,25 +48,67 @@ export const obterConsulta = async (req, res) => {
 };
 
 export const criarConsulta = async (req, res) => {
-    const novoId = uuidv4();
+  if (![tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: 'Acesso não autorizado.' });
+  }
 
-    const { data: consultaExistente } = await buscarConsultaPorId(novoId);
-    if (consultaExistente) {
-        return res.status(400).json({ error: 'ID gerado já está em uso. Tente novamente.' });
+    const { id_medico, id_usuario, data, descricao, status = StatusConsulta.NAOAGENDADO } = req.body;
+  
+    // Validação de UUIDs
+    const validaIdMedico = schemaId.validate(id_medico);
+    const validaIdUsuario = schemaId.validate(id_usuario);
+    if (validaIdMedico.error || validaIdUsuario.error) {
+      return res.status(400).json({ error: 'ID de médico ou paciente inválido.' });
     }
-
+  
+    // Impede que médico e paciente sejam o mesmo
+    if (id_usuario === id_medico) {
+      return res.status(400).json({ error: 'O médico e o paciente não podem ser a mesma pessoa.' });
+    }
+  
+    // Verifica se já existe uma consulta excluída com o mesmo médico
+    const { data: consultaExistente, error: buscaError } = await buscarConsultaPorMedicoComStatus(id_medico);
+  
+    if (buscaError) return res.status(500).json({ error: 'Erro ao buscar consulta existente.' });
+  
+    if (consultaExistente) {
+      // Reativa consulta
+      const dadosAtualizados = {
+        id_usuario,
+        data,
+        descricao,
+        status: StatusConsulta.NAOAGENDADO // Ativa a consulta
+      };
+  
+      const { error: erroReativar } = await atualizarConsulta(consultaExistente.id_consulta, dadosAtualizados);
+      if (erroReativar) {
+        return res.status(500).json({ error: 'Erro ao reativar consulta existente.' });
+      }
+  
+      return res.status(200).json({ message: 'Consulta reativada com sucesso.' });
+    }
+  
+    // Criação de nova consulta
     const novaConsulta = {
-        id: novoId,
-        ...req.body
+      id_consulta: uuidv4(),
+      id_usuario,
+      id_medico,
+      data,
+      descricao,
+      status
     };
-
-    const { data, error } = await adicionarConsulta(novaConsulta);
-    if (error) return res.status(500).json({ error: error.message });
-
-    res.status(201).json(data);
-};
+  
+    const { data: nova, error: erroInserir } = await adicionarConsulta(novaConsulta);
+    if (erroInserir) return res.status(500).json({ error: erroInserir.message });
+  
+    res.status(201).json(nova);
+  };
 
 export const editarConsulta = async (req, res) => {
+  if (![tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: 'Acesso não autorizado.' });
+  }
+
     const { id } = req.params;
 
     const { error } = schemaId.validate(id);
@@ -61,12 +120,16 @@ export const editarConsulta = async (req, res) => {
 };
 
 export const excluirConsulta = async (req, res) => {
+  if (![tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: 'Acesso não autorizado.' });
+  }
+
     const { id } = req.params;
-
-    const { error } = schemaId.validate(id);
-    if (error) return res.status(400).json({ error: 'ID inválido' });
-
-    const { data, error: dbError } = await deletarConsulta(id);
-    if (dbError || !data) return res.status(500).json({ error: error.message });
-    res.json({ mensagem: 'Consulta excluída com sucesso.', data });
+  
+    const { data: existente, error: getError } = await buscarConsultaPorId(id);
+      if (getError || !existente) return res.status(404).json({ error: 'Consulta não encontrada.' });
+    
+      const { error } = await excluirConsultaStatus(id);
+      if (error) return res.status(500).json({ error: error.message });
+      res.json({ message: 'Consulta excluída com sucesso.' });
 };
