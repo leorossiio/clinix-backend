@@ -2,7 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   buscarTodosUsuarios,
   buscarUsuarioPorId,
-  adicionarUsuario,
+  adicionarNovoUsuario,
   atualizarUsuario,
   deletarUsuario
 } from '../repositories/usuario.repository.js';
@@ -57,7 +57,7 @@ export const adicionarUsuario = async (req, res) => {
     crm
   };
 
-  const { data, error } = await adicionarUsuario(novoUsuario);
+  const { data, error } = await adicionarNovoUsuario(novoUsuario);
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
 };

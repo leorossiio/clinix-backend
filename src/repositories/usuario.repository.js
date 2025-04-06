@@ -8,7 +8,7 @@ export const buscarUsuarioPorId = async (id_usuario) => {
   return await supabase.from('usuario').select('*').eq('id_usuario', id_usuario).single();
 };
 
-export const adicionarUsuario = async (usuario) => {
+export const adicionarNovoUsuario = async (usuario) => {
   return await supabase.from('usuario').insert([usuario]);
 };
 
