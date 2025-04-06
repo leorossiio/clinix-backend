@@ -11,7 +11,7 @@ export const login = async (req, res) => {
   if (usuario.senha !== senha) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
   // DEBUG: imprime o usuário pra garantir que tipo está vindo
-  console.log('Usuário autenticado:', usuario);
+  // console.log('Usuário autenticado:', usuario);
 
   const token = jwt.sign(
     {
@@ -22,7 +22,7 @@ export const login = async (req, res) => {
     { expiresIn: '1h' }
   );
 
-  console.log('Token gerado:', token);
+  // console.log('Token gerado:', token);
 
   res.json({ token });
 };
