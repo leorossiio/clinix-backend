@@ -9,27 +9,27 @@ export const buscarTodasConsultasUsuario = async () => {
     return await supabase.from('consulta').select('*').eq('status', StatusConsulta.NAOAGENDADO);
 };
 
-export const buscarConsultaPorId = async (id) => {
-    return await supabase.from('consulta').select('*').eq('id', id).single();
+export const buscarConsultaPorId = async (id_consulta) => {
+    return await supabase.from('consulta').select('*').eq('id_consulta', id_consulta).single();
 };
 
 export const adicionarConsulta = async (dados) => {
     return await supabase.from('consulta').insert([dados]);
 };
 
-export const atualizarConsulta = async (id, dados) => {
-    return await supabase.from('consulta').update(dados).eq('id', id);
+export const atualizarConsulta = async (id_consulta, dados) => {
+    return await supabase.from('consulta').update(dados).eq('id_consulta', id_consulta).select().single();
 };
 
-export const deletarConsulta = async (id) => {
-    return await supabase.from('consulta').delete().eq('id', id);
+export const deletarConsulta = async (id_consulta) => {
+    return await supabase.from('consulta').delete().eq('id_consulta', id_consulta);
 };
 
-export const excluirConsultaStatus = async (id) => {
+export const excluirConsultaStatus = async (id_consulta) => {
     return await supabase
       .from('consulta')
       .update({ status: StatusConsulta.CANCELADA })
-      .eq('id_consulta', id)
+      .eq('id_consulta', id_consulta)
       .select()
       .maybeSingle();
   };

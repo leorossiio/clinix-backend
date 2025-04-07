@@ -16,7 +16,7 @@ import { tipoUsuario } from '../utils/enums/index.js';
 const router = express.Router();
 
 router.get('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), listarConsultas); // admin ou medico
-router.get('/usuario', autenticacao, autorizar(tipoUsuario.USUARIO), listarConsultasUsuario); // cliente
+router.get('/usuario', autenticacao, autorizar([tipoUsuario.USUARIO]), listarConsultasUsuario); // cliente
 router.get('/:id', obterConsultaPorId); // sem autenticação por enquanto
 router.post('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), criarConsulta);
 router.put('/:id', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), editarConsulta);

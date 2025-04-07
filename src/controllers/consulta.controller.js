@@ -26,7 +26,7 @@ export const listarConsultas = async (req, res) => {
 };
 
 export const listarConsultasUsuario = async (req, res) => {
-  if (!tipoUsuario.USUARIO.includes(req.usuario.tipo)) {
+  if (![tipoUsuario.USUARIO].includes(req.usuario.tipo)) {
     return res.status(403).json({ error: 'Acesso não autorizado.' });
   }
 
@@ -109,10 +109,13 @@ export const editarConsulta = async (req, res) => {
     return res.status(403).json({ error: 'Acesso não autorizado.' });
   }
 
-    const { id } = req.params;
+  //TODO: deixar apenas alterar os valores de data, descrição e id_medico.
+  //irá criar outro endpoint para agendar um usuario a uma consulta
 
-    const { error } = schemaId.validate(id);
-    if (error) return res.status(400).json({ error: 'ID inválido' });
+  const { id } = req.params;
+
+  const { error } = schemaId.validate(id);
+  if (error) return res.status(400).json({ error: 'ID inválido' });
 
     const { data, error: dbError } = await atualizarConsulta(id, req.body);
     if (dbError || !data) return res.status(500).json({ error: error.message });
