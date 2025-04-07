@@ -1,8 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
-// Carregar as variáveis de ambiente do arquivo .env
-dotenv.config();
+dotenv.config(); // Carrega o .env
 
 const supabaseUrl = 'https://nyfgvjbksgggpjdkmhxv.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY;

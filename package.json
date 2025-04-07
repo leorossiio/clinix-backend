@@ -3,10 +3,13 @@
     "@supabase/supabase-js": "^2.49.4",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "pg": "^8.14.1"
+    "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.14.1",
+    "uuid": "^11.1.0"
   },
   "scripts": {
-    "start": "node app.js"
+    "start": "node src/app.js"
   },
   "type": "module"
 }

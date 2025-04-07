@@ -1,0 +1,16 @@
+Principais comandos:
+1- npm i
+2- npm install pg
+3- npm install @supabase/supabase-js
+4- npm install dotenv
+
+/src
+│
+├── controllers       # Lógica das rotas
+├── routes            # Endpoints da API
+├── services          # Lógica de negócio
+├── repositories      # Comunicação com o banco
+├── middlewares       # Autenticação, validação etc.
+├── models            # (Opcional)
+├── migrations            # Schema, migrations, client do Prisma
+└── utils             # Helpers, funções utilitárias
