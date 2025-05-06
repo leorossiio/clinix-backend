@@ -1,8 +1,12 @@
 import supabase from '../supabase.js';
-import { StatusUsuario } from '../utils/enums/index.js';
+import { StatusUsuario, tipoUsuario } from '../utils/enums/index.js';
 
 export const buscarTodosUsuarios = async () => {
   return await supabase.from('usuario').select('*').eq('status', StatusUsuario.ATIVO);
+};
+
+export const buscarTodosMedicos = async () => {
+  return await supabase.from('usuario').select('*').eq('status', StatusUsuario.ATIVO).eq('tipo_usuario', tipoUsuario.MEDICO);
 };
 
 export const buscarUsuarioPorId = async (id_usuario) => {

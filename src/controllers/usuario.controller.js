@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
   buscarTodosUsuarios,
+  buscarTodosMedicos,
   buscarUsuarioPorId,
   adicionarNovoUsuario,
   atualizarUsuario,
@@ -12,6 +13,12 @@ import { EspecialidaeMedica, StatusUsuario, tipoUsuario } from '../utils/enums/i
 
 export const listarUsuarios = async (req, res) => {
   const { data, error } = await buscarTodosUsuarios();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+};
+
+export const listarMedicos = async (req, res) => {
+  const { data, error } = await buscarTodosMedicos();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 };
@@ -32,7 +39,7 @@ export const adicionarUsuario = async (req, res) => {
     nome,
     email,
     senha,
-    tipo_usuario,
+    tipo_usuario = tipoUsuario.USUARIO,
     status = StatusUsuario.ATIVO,
     especialidade = null,
     crm = null
