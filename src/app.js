@@ -1,10 +1,13 @@
 import express from 'express';
+import cors from 'cors';
+
 import usuarioRoutes from './routes/usuario.routes.js';
 import consultaRoutes from './routes/consulta.routes.js';
 import notificacaoRoutes from './routes/notificacao.routes.js';
 import authRoutes from './routes/auth.routes.js';
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 app.use('/usuarios', usuarioRoutes);
