@@ -1,10 +1,12 @@
 # `clinix-backend/README.md`
 
-```
+---
+
 # Clinix Backend
 
 API RESTful do sistema Clinix, construída com [Node.js](https://nodejs.org/), [Express](https://expressjs.com/) e [TypeScript](https://www.typescriptlang.org/). 
 Responsável pelo gerenciamento de usuários, autenticação com JWT, agendamento de consultas e conexão com o banco PostgreSQL pelo SUPABASE.
+
 
 # Repositório Frontend
 
@@ -72,5 +74,14 @@ JWT_SECRET='token'
 
 ---
 
+# Planejamento no Jira
+O projeto foi planejado com sprints no Jira, com tarefas por funcionalidade:
 
+  - Login com autenticação JWT e redirecionamento por perfil
+  - Listagem e cadastro de usuários
+  - Cadastro de consultas com associação entre médico e paciente
+  - Proteção de rotas com guards de autenticação
+  - Separação de perfis para Admin, Médico e Paciente
+
+---
 
