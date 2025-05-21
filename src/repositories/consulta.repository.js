@@ -6,7 +6,7 @@ export const buscarTodasConsultas = async () => {
 };
 
 export const buscarTodasConsultasAgendadas = async (id_usuario) => {
-    return await supabase.from('consulta').select('*').eq('status', StatusConsulta.AGENDADO).eq('id_usuario', id_usuario);
+    return await supabase.from('consulta').select('*').eq('id_usuario', id_usuario);
 };
 
 export const buscarTodasConsultasUsuario = async () => {
