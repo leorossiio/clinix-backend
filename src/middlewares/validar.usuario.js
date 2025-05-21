@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { EspecialidaeMedica } from '../utils/enums/index.js';
+import { EspecialidadeMedica } from '../utils/enums/index.js';
 
 export const validarUsuario = (req, res, next) => {
   const schema = Joi.object({
@@ -15,7 +15,7 @@ export const validarUsuario = (req, res, next) => {
       'string.empty': 'A senha é obrigatória',
     }),
     especialidade: Joi.number()
-      .valid(...Object.keys(EspecialidaeMedica).map(Number))
+      .valid(...Object.keys(EspecialidadeMedica).map(Number))
       .optional()
       .allow(null),
     crm: Joi.string().optional().allow(null, ''),
@@ -42,7 +42,7 @@ export const validarUsuarioUpdate = (req, res, next) => {
       'string.min': 'A senha deve ter no mínimo 6 caracteres',
     }),
     especialidade: Joi.number()
-      .valid(...Object.keys(EspecialidaeMedica).map(Number))
+      .valid(...Object.keys(EspecialidadeMedica).map(Number))
       .allow(null),
     crm: Joi.string().allow(null, ''),
   })

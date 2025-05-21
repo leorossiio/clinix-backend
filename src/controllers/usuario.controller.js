@@ -8,7 +8,7 @@ import {
   excluirUsuarioStatus,
   buscarUsuarioPorEmail
 } from '../repositories/usuario.repository.js';
-import { EspecialidaeMedica, StatusUsuario, tipoUsuario } from '../utils/enums/index.js';
+import { EspecialidadeMedica, StatusUsuario, tipoUsuario } from '../utils/enums/index.js';
 
 
 export const listarUsuarios = async (req, res) => {
@@ -51,7 +51,7 @@ export const adicionarUsuario = async (req, res) => {
   }
 
   // Validação da especialidade
-  if (especialidade !== null && !Object.keys(EspecialidaeMedica).includes(String(especialidade))) {
+  if (especialidade !== null && !Object.keys(EspecialidadeMedica).includes(String(especialidade))) {
     return res.status(400).json({ error: 'Especialidade inválida.' });
   }
 

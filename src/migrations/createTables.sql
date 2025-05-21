@@ -13,7 +13,7 @@ CREATE TABLE usuario (
 -- Tabela Consulta
 CREATE TABLE consulta (
   id_consulta UUID PRIMARY KEY,
-  id_usuario UUID NOT NULL,
+  id_usuario UUID,
   id_medico UUID NOT NULL,
   data TIMESTAMP NOT NULL,
   descricao VARCHAR(255),
