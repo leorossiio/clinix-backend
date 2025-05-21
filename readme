@@ -1,10 +1,76 @@
-/src
-│
-├── controllers       # Lógica das rotas
-├── routes            # Endpoints da API
-├── services          # Lógica de negócio
-├── repositories      # Comunicação com o banco
-├── middlewares       # Autenticação, validação etc.
-├── models            # (Opcional)
-├── migrations            # Schema, migrations, client do Prisma
-└── utils             # Helpers, funções utilitárias
+# `clinix-backend/README.md`
+
+```
+# Clinix Backend
+
+API RESTful do sistema Clinix, construída com [Node.js](https://nodejs.org/), [Express](https://expressjs.com/) e [TypeScript](https://www.typescriptlang.org/). 
+Responsável pelo gerenciamento de usuários, autenticação com JWT, agendamento de consultas e conexão com o banco PostgreSQL pelo SUPABASE.
+
+# Repositório Frontend
+
+[Clinix Frontend](https://github.com/leorossiio/clinix-frontend)
+
+---
+
+# Tecnologias Utilizadas
+
+  - Node.js
+  - Express
+  - TypeScript
+  - Prisma ORM
+  - PostgreSQL
+  - JWT (autenticação)
+  - Zod (validação de dados)
+  - Dotenv
+
+---
+
+# Execução do Projeto
+
+```prompt
+# Clonar o repositório
+git clone https://github.com/leorossiio/clinix-backend.git
+cd clinix-backend
+
+# Instalar as dependências
+npm install
+
+# Executar o servidor em modo dev (deve estar dentro da pasta '\clinix-backend')
+npm run start <- A API ficará disponível em: http://localhost:3000
+```
+
+---
+
+# Variáveis de Ambiente
+
+Crie um arquivo .env com o seguinte conteúdo:
+
+SUPABASE_KEY="chave-supabase-aqui"
+JWT_SECRET='token'
+
+---
+
+# Padrões de Projeto Implementados
+
+  - Padrão MVC: Separação entre controllers, services, routes.
+  - RESTful API: Endpoints organizados por entidades (/usuarios, /consultas).
+  - Autenticação com JWT: Proteção de rotas com verificação de token.
+  - Middleware global de erros: Tratamento centralizado.
+
+---
+
+# Estrutura de pastas
+```
+  src/
+├── controllers/      # Controladores de rotas
+├── middlewares/      # Autenticação, erros
+├── migrations/       # Banco de dados
+├── repositories/     # logica do sistema
+├── routes/           # Definição das rotas
+└── server.ts         # Inicialização do servidor
+```
+
+---
+
+
+
