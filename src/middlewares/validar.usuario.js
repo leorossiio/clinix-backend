@@ -46,8 +46,8 @@ export const validarUsuarioUpdate = (req, res, next) => {
       .allow(null),
     crm: Joi.string().allow(null, ''),
   })
-    .or('nome', 'email', 'senha', 'especialidade', 'crm') // pelo menos um desses campos é necessário
-    .unknown(false); // impede campos extras
+    .or('nome', 'email', 'senha', 'especialidade', 'crm') 
+    .unknown(false); 
 
   const { error } = schema.validate(req.body, { abortEarly: true });
   if (error) {

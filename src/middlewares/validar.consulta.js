@@ -14,7 +14,7 @@ export const validarConsulta = (req, res, next) => {
     descricao: Joi.string().allow('', null).messages({
       'string.base': 'A descrição deve ser um texto',
     }),
-  }).unknown(false); // impede campos não esperados como id_usuario, status, etc.
+  }).unknown(false);
 
   const { error } = schema.validate(req.body, { abortEarly: true });
   if (error) {
@@ -36,8 +36,8 @@ export const validarConsultaUpdate = (req, res, next) => {
       'string.base': 'A descrição deve ser um texto',
     }),
   })
-    .or('id_medico', 'data', 'descricao') // precisa de pelo menos um
-    .unknown(false); // bloqueia campos não esperados
+    .or('id_medico', 'data', 'descricao') 
+    .unknown(false); 
 
   const { error } = schema.validate(req.body, { abortEarly: true });
   if (error) {
@@ -64,7 +64,7 @@ export const validarFiltroConsulta = (req, res, next) => {
     crm: Joi.string().pattern(/^[0-9]+$/).messages({
       'string.pattern.base': 'O CRM deve conter apenas números'
     })
-  }).unknown(false); // bloqueia campos não esperados
+  }).unknown(false); 
 
   const { error } = schema.validate(req.body, { abortEarly: true });
   if (error) {
@@ -80,7 +80,7 @@ export const validarAgendamentoConsulta = (req, res, next) => {
       .uuid()
       .required()
       .messages({'string.uuid': 'O ID do usuário deve ser um UUID válido'})
-  }).unknown(false); // bloqueia campos não esperados
+  }).unknown(false); 
 
   const { error } = schema.validate(req.body, { abortEarly: true });
   if (error) {

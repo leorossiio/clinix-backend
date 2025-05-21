@@ -45,23 +45,19 @@ export const adicionarUsuario = async (req, res) => {
     crm = null
   } = req.body;
 
-  // Validação do tipo
   if (![tipoUsuario.USUARIO, tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(tipo_usuario)) {
     return res.status(400).json({ error: 'Tipo inválido.' });
   }
 
-  // Validação da especialidade
   if (especialidade !== null && !Object.keys(EspecialidadeMedica).includes(String(especialidade))) {
     return res.status(400).json({ error: 'Especialidade inválida.' });
   }
 
-  // Verifica se o usuário já existe pelo e-mail
   const { data: usuarioExistente, error } = await buscarUsuarioPorEmail(email);
   if (error) return res.status(500).json({ error: 'Erro ao verificar e-mail existente.' });
 
   if (usuarioExistente) {
     if (usuarioExistente.status === StatusUsuario.DELETADO) {
-      // Reativa o usuário
       const { error: reativarError } = await atualizarUsuario(usuarioExistente.id_usuario, {
         nome,
         senha,
@@ -81,7 +77,6 @@ export const adicionarUsuario = async (req, res) => {
     return res.status(400).json({ error: 'Já existe um usuário ativo com este e-mail.' });
   }
 
-  // Novo usuário
   const novoUsuario = {
     id_usuario,
     nome,

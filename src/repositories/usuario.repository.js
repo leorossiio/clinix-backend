@@ -39,7 +39,7 @@ export const buscarUsuarioPorEmail = async (email) => {
     .from('usuario')
     .select('*')
     .eq('email', email)
-    .maybeSingle(); // retorna null se não encontrar
+    .maybeSingle();
 
   return { data, error };
 };

@@ -76,7 +76,6 @@ export const criarConsulta = async (req, res) => {
     status = StatusConsulta.NAOAGENDADO,
   } = req.body;
   
-    // Validação de UUIDs
     const validaIdMedico = schemaId.validate(id_medico);
   if (id_usuario == null) {
     const validaIdUsuario = schemaId.validate(id_usuario);
@@ -88,14 +87,12 @@ export const criarConsulta = async (req, res) => {
     return res.status(400).json({ error: "ID do médico  inválido." });
     }
   
-    // Impede que médico e paciente sejam o mesmo
     if (id_usuario === id_medico) {
     return res
       .status(400)
       .json({ error: "O médico e o paciente não podem ser a mesma pessoa." });
     }
   
-    // Verifica se já existe uma consulta excluída com o mesmo médico
   const { data: consultaExistente, error: buscaError } =
     await buscarConsultaPorMedicoComStatus(id_medico);
   
@@ -105,12 +102,11 @@ export const criarConsulta = async (req, res) => {
       .json({ error: "Erro ao buscar consulta existente." });
   
     if (consultaExistente) {
-      // Reativa consulta
       const dadosAtualizados = {
         id_usuario,
         data,
         descricao,
-      status: StatusConsulta.NAOAGENDADO, // Ativa a consulta
+      status: StatusConsulta.NAOAGENDADO,
       };
   
     const { error: erroReativar } = await atualizarConsulta(
@@ -126,7 +122,6 @@ export const criarConsulta = async (req, res) => {
     return res.status(200).json({ message: "Consulta reativada com sucesso." });
     }
   
-    // Criação de nova consulta
     const novaConsulta = {
       id_consulta: uuidv4(),
       id_usuario,

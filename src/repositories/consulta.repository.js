@@ -44,7 +44,7 @@ export const buscarConsultaPorMedicoComStatus = async (id_medico) => {
       .select('*')
       .eq('id_medico', id_medico)
       .eq('status', StatusConsulta.CANCELADA)
-      .maybeSingle(); // retorna null se não tiver
+      .maybeSingle();
   
     return { data, error };
   };
