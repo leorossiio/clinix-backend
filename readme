@@ -60,7 +60,7 @@ JWT_SECRET='token'
 ---
 
 # Estrutura de pastas
-```
+```Pastas
   src/
 ├── controllers/      # Controladores de rotas
 ├── middlewares/      # Autenticação, erros
