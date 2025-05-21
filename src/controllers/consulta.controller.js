@@ -6,6 +6,7 @@ import {
     atualizarConsulta,
     excluirConsultaStatus,
   buscarConsultaPorMedicoComStatus,
+  buscarTodasConsultasAgendadas
 } from "../repositories/consulta.repository.js";
 import { StatusConsulta, tipoUsuario } from "../utils/enums/index.js";
 
@@ -22,6 +23,21 @@ export const listarConsultas = async (req, res) => {
     const { data, error } = await buscarTodasConsultas();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
+};
+
+export const listarConsultasAgendadas = async (req, res) => {
+  if (![tipoUsuario.USUARIO].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: "Acesso não autorizado." });
+  }
+
+  const { id } = req.params;
+
+  const { error } = schemaId.validate(id);
+  if (error) return res.status(400).json({ error: "ID inválido" });
+
+  const { data, error:dbError } = await buscarTodasConsultasAgendadas();
+  if (dbError) return res.status(500).json({ error: dbError.message });
+  res.json(data);
 };
 
 export const listarConsultasUsuario = async (req, res) => {
