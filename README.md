@@ -4,7 +4,7 @@
 
 # Clinix Backend
 
-API RESTful do sistema Clinix, construída com [Node.js](https://nodejs.org/), [Express](https://expressjs.com/) e [TypeScript](https://www.typescriptlang.org/). 
+API RESTful do sistema Clinix, construída com [Node.js](https://nodejs.org/) e [Express](https://expressjs.com/). 
 Responsável pelo gerenciamento de usuários, autenticação com JWT, agendamento de consultas e conexão com o banco PostgreSQL pelo SUPABASE.
 
 
@@ -18,11 +18,8 @@ Responsável pelo gerenciamento de usuários, autenticação com JWT, agendament
 
   - Node.js
   - Express
-  - TypeScript
-  - Prisma ORM
   - PostgreSQL
   - JWT (autenticação)
-  - Zod (validação de dados)
   - Dotenv
 
 ---
@@ -39,13 +36,14 @@ npm install
 
 # Executar o servidor em modo dev (deve estar dentro da pasta '\clinix-backend')
 npm run start <- A API ficará disponível em: http://localhost:3000
+<- A documentação do swagger ficara disponível em: http://localhost:3000/api-docs
 ```
 
 ---
 
-# Variáveis de Ambiente
+# Variáveis de Ambiente local
 
-Crie um arquivo .env com o seguinte conteúdo:
+Crie um arquivo .env, na pasta clinix-backend, com o seguinte conteúdo:
 
 SUPABASE_KEY="chave-supabase-aqui"
 JWT_SECRET='token'
@@ -55,7 +53,7 @@ JWT_SECRET='token'
 # Padrões de Projeto Implementados
 
   - Padrão MVC: Separação entre controllers, services, routes.
-  - RESTful API: Endpoints organizados por entidades (/usuarios, /consultas).
+  - RESTful API: Endpoints organizados por entidades (/usuarios, /consultas, /notificacoes).
   - Autenticação com JWT: Proteção de rotas com verificação de token.
   - Middleware global de erros: Tratamento centralizado.
 
