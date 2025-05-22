@@ -85,5 +85,14 @@ O projeto foi planejado com sprints no Jira, com tarefas por funcionalidade:
 
 ---
 
-# Itens não implementados criados no Jira:
+# Itens não implementados criados no Jira: (21/05)
+Abaixo estão os itens que ainda não foram implementados na sprint atual. Eles estão registrados na coluna "Aguardando Dev" no board do Jira e serão replanejados para a próxima sprint, conforme alinhamento da equipe:
 
+| Tarefa                                                    | Código        | Pontos | Responsável | Justificativa                                                                                                                           |
+| --------------------------------------------------------- | ------------- | ------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Integrar filtro com a tabela/lista de resultados**      | `CLINIXSM-39` | 5      | GM          | Depende da finalização do componente de exibição e consolidação das regras definidas no RF3. Priorizou-se estruturar os dados primeiro. |
+| **Adicionar loading enquanto carrega filtros**            | `CLINIXSM-41` | 2      | JG          | O carregamento já está mapeado, mas o componente visual de loading aguarda definição final do padrão de UX.                             |
+| **Garantir que filtros não sejam reiniciados ao navegar** | `CLINIXSM-43` | 3      | JG          | Exige persistência de estado entre rotas. A estrutura de navegação ainda está em ajuste.                                                |
+| **Validar disponibilidade do médico e horário**           | `CLINIXSM-45` | 5      | TT          | Requer a conclusão da camada de verificação no back-end, que está sendo ajustada para múltiplos agendamentos.                           |
+| **Aplicar regras de negócio no agendamento**              | `CLINIXSM-46` | 3      | TT          | Depende da validação final do documento de regras (RF4), especialmente quanto a bloqueios e limites de agendamento.                     |
+| **Validar cancelamento com mais de 24h de antecedência**  | `CLINIXSM-50` | 2      | GM          | A lógica de cancelamento está em desenvolvimento, mas a checagem do tempo mínimo ainda precisa ser integrada.                           |
