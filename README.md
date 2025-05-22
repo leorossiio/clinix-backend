@@ -85,3 +85,5 @@ O projeto foi planejado com sprints no Jira, com tarefas por funcionalidade:
 
 ---
 
+# Itens não implementados criados no Jira:
+
