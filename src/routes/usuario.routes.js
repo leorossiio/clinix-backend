@@ -7,7 +7,7 @@ import {
   editarUsuario,
   excluirUsuario
 } from '../controllers/usuario.controller.js';
-import { validarUsuario, validarUsuarioUpdate } from '../middlewares/validar.usuario.js'
+import { validarUsuario, validarUsuarioUpdate } from '../middlewares/validar.usuario.js';
 import { autenticacao, autorizar } from '../middlewares/auth.middleware.js';
 import { tipoUsuario } from '../utils/enums/index.js';
 
@@ -28,6 +28,19 @@ const router = express.Router();
  *     tags: [Usuários]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: tipo_usuario
+ *         schema:
+ *           type: integer
+ *           enum: [1, 2, 3]
+ *         description: Filtrar por tipo de usuário (1-USUARIO, 2-MEDICO, 3-ADMIN)
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: integer
+ *           enum: [0, 1]
+ *         description: Filtrar por status (0-INATIVO, 1-ATIVO)
  *     responses:
  *       200:
  *         description: Lista de usuários
@@ -37,8 +50,18 @@ const router = express.Router();
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Usuario'
+ *       401:
+ *         description: Não autenticado
  *       403:
  *         description: Acesso não autorizado
+ *       500:
+ *         description: Erro interno do servidor
+ * 
+ *     x-code-samples:
+ *       - lang: 'curl'
+ *         source: |
+ *           curl -X GET "http://localhost:3000/usuarios" \
+ *           -H "Authorization: Bearer {token}"
  */
 router.get('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN]), listarUsuarios);
 
@@ -46,7 +69,7 @@ router.get('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN])
  * @swagger
  * /usuarios/medicos:
  *   get:
- *     summary: Lista todos os médicos
+ *     summary: Lista todos os médicos ativos
  *     tags: [Usuários]
  *     responses:
  *       200:
@@ -57,6 +80,8 @@ router.get('/', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.ADMIN])
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Usuario'
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.get('/medicos', listarMedicos);
 
@@ -83,6 +108,8 @@ router.get('/medicos', listarMedicos);
  *               $ref: '#/components/schemas/Usuario'
  *       404:
  *         description: Usuário não encontrado
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.get('/:id', obterUsuarioPorId);
 
@@ -101,8 +128,16 @@ router.get('/:id', obterUsuarioPorId);
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Usuario'
  *       400:
  *         description: Dados inválidos
+ *       409:
+ *         description: Usuário já existe
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.post('/', validarUsuario, adicionarUsuario);
 
@@ -129,10 +164,16 @@ router.post('/', validarUsuario, adicionarUsuario);
  *     responses:
  *       200:
  *         description: Usuário atualizado
- *       404:
- *         description: Usuário não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Usuario'
  *       400:
  *         description: Dados inválidos
+ *       404:
+ *         description: Usuário não encontrado
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.put('/:id', validarUsuarioUpdate, editarUsuario);
 
@@ -140,7 +181,7 @@ router.put('/:id', validarUsuarioUpdate, editarUsuario);
  * @swagger
  * /usuarios/{id_usuario}:
  *   delete:
- *     summary: Remove um usuário
+ *     summary: Remove um usuário (marca como inativo)
  *     tags: [Usuários]
  *     parameters:
  *       - in: path
@@ -152,9 +193,11 @@ router.put('/:id', validarUsuarioUpdate, editarUsuario);
  *         description: ID do usuário
  *     responses:
  *       204:
- *         description: Usuário removido
+ *         description: Usuário removido com sucesso
  *       404:
  *         description: Usuário não encontrado
+ *       500:
+ *         description: Erro interno do servidor
  */
 router.delete('/:id', excluirUsuario);
 

@@ -14,25 +14,14 @@ const router = express.Router();
  * @swagger
  * /auth/login:
  *   post:
- *     summary: Autentica um usuário
+ *     summary: Autentica um usuário e retorna token JWT
  *     tags: [Autenticação]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - email
- *               - senha
- *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: medico@clinix.com
- *               senha:
- *                 type: string
- *                 example: senha123
+ *             $ref: '#/components/schemas/LoginRequest'
  *     responses:
  *       200:
  *         description: Login bem-sucedido
@@ -40,10 +29,24 @@ const router = express.Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/LoginResponse'
+ *         headers:
+ *           Authorization:
+ *             schema:
+ *               type: string
+ *             description: Token JWT para autenticação
  *       400:
  *         description: Dados inválidos
  *       401:
  *         description: Credenciais inválidas
+ *       500:
+ *         description: Erro interno do servidor
+ * 
+ *     x-code-samples:
+ *       - lang: 'curl'
+ *         source: |
+ *           curl -X POST "http://localhost:3000/auth/login" \
+ *           -H "Content-Type: application/json" \
+ *           -d '{"email":"medico@clinix.com","senha":"senha123"}'
  */
 router.post('/login', login);
 

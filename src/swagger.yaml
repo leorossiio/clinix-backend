@@ -1,0 +1,599 @@
+openapi: 3.0.0
+info:
+  title: Clinix API
+  version: 1.0.0
+  description: API completa para o sistema Clinix com suporte para testes diretos
+  contact:
+    name: Suporte Clinix
+    email: suporte@clinix.com
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desenvolvimento
+
+paths:
+  /auth/login:
+    post:
+      tags:
+        - Autenticação
+      summary: Autentica um usuário
+      description: Retorna token JWT para acesso aos endpoints protegidos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: "medico@clinix.com"
+              senha: "senha123"
+      responses:
+        '200':
+          description: Autenticação bem-sucedida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          headers:
+            Authorization:
+              schema:
+                type: string
+              description: Token JWT
+        '400':
+          description: Dados inválidos
+        '401':
+          description: Credenciais inválidas
+        '500':
+          description: Erro interno
+
+  /usuarios:
+    get:
+      tags:
+        - Usuários
+      summary: Lista usuários
+      description: Retorna todos os usuários (requer autenticação ADMIN/MEDICO)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tipo_usuario
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+          description: 1-USUARIO, 2-MEDICO, 3-ADMIN
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [0, 1]
+          description: 0-INATIVO, 1-ATIVO
+      responses:
+        '200':
+          description: Lista de usuários
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+        '401':
+          description: Não autenticado
+        '403':
+          description: Acesso não autorizado
+        '500':
+          description: Erro interno
+
+    post:
+      tags:
+        - Usuários
+      summary: Cria usuário
+      description: Cadastra um novo usuário no sistema
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+            example:
+              nome: "Dr. Ana Silva"
+              email: "ana@clinix.com"
+              senha: "senha123"
+      responses:
+        '201':
+          description: Usuário criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Dados inválidos
+        '500':
+          description: Erro interno
+
+  /usuarios/medicos:
+    get:
+      tags:
+        - Usuários
+      summary: Lista médicos
+      description: Retorna todos os médicos ativos
+      responses:
+        '200':
+          description: Lista de médicos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Usuario'
+        '500':
+          description: Erro interno
+
+  /usuarios/{id_usuario}:
+    get:
+      tags:
+        - Usuários
+      summary: Busca usuário
+      description: Retorna um usuário específico pelo ID
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dados do usuário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+
+    put:
+      tags:
+        - Usuários
+      summary: Atualiza usuário
+      description: Atualiza os dados de um usuário
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Usuario'
+            example:
+              nome: "Dr. Ana Silva Jr"
+              email: "ana.jr@clinix.com"
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '400':
+          description: Dados inválidos
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+
+    delete:
+      tags:
+        - Usuários
+      summary: Remove usuário
+      description: Marca um usuário como inativo
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Usuário removido
+        '404':
+          description: Usuário não encontrado
+        '500':
+          description: Erro interno
+
+  /consultas:
+    get:
+      tags:
+        - Consultas
+      summary: Lista consultas
+      description: Retorna todas as consultas (requer autenticação)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: integer
+            enum: [1, 2, 3]
+          description: 1-AGENDADA, 2-CONCLUIDA, 3-CANCELADA
+        - name: data_inicio
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: data_fim
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Lista de consultas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Consulta'
+        '401':
+          description: Não autenticado
+        '500':
+          description: Erro interno
+
+    post:
+      tags:
+        - Consultas
+      summary: Cria consulta
+      description: Cadastra uma nova consulta (requer autenticação MEDICO/ADMIN)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consulta'
+            example:
+              id_medico: "123e4567-e89b-12d3-a456-426614174000"
+              data: "2023-12-15T14:30:00Z"
+              descricao: "Consulta de rotina"
+              status: 1
+      responses:
+        '201':
+          description: Consulta criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '500':
+          description: Erro interno
+
+  /consultas/{id_consulta}:
+    get:
+      tags:
+        - Consultas
+      summary: Busca consulta
+      description: Retorna uma consulta específica pelo ID
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dados da consulta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+
+    put:
+      tags:
+        - Consultas
+      summary: Atualiza consulta
+      description: Atualiza os dados de uma consulta (requer autenticação MEDICO/ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Consulta'
+      responses:
+        '200':
+          description: Consulta atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+
+    delete:
+      tags:
+        - Consultas
+      summary: Remove consulta
+      description: Cancela uma consulta (requer autenticação MEDICO/ADMIN)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Consulta removida
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+
+  /consultas/{id_consulta}/agendar:
+    put:
+      tags:
+        - Consultas
+      summary: Agenda consulta
+      description: Agenda uma consulta para um paciente (requer autenticação USUARIO)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_usuario:
+                  type: string
+                  format: uuid
+              required:
+                - id_usuario
+            example:
+              id_usuario: "123e4567-e89b-12d3-a456-426614174000"
+      responses:
+        '200':
+          description: Consulta agendada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+
+  /notificacoes:
+    get:
+      tags:
+        - Notificações
+      summary: Lista notificações
+      description: Retorna todas as notificações (requer autenticação)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Lista de notificações
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notificacao'
+        '401':
+          description: Não autenticado
+        '500':
+          description: Erro interno
+
+    post:
+      tags:
+        - Notificações
+      summary: Cria notificação
+      description: Cadastra uma nova notificação (requer autenticação)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notificacao'
+            example:
+              id_consulta: "123e4567-e89b-12d3-a456-426614174000"
+              lembrete: "Consulta agendada para amanhã às 14h"
+      responses:
+        '201':
+          description: Notificação criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notificacao'
+        '400':
+          description: Dados inválidos
+        '500':
+          description: Erro interno
+
+components:
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        id_usuario:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        nome:
+          type: string
+          example: "Dr. João Silva"
+        email:
+          type: string
+          format: email
+          example: "joao@clinix.com"
+        senha:
+          type: string
+          example: "senha123"
+        tipo_usuario:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1-USUARIO, 2-MEDICO, 3-ADMIN"
+          example: 2
+        status:
+          type: integer
+          enum: [0, 1]
+          description: "0-INATIVO, 1-ATIVO"
+          example: 1
+        especialidade:
+          type: integer
+          nullable: true
+          example: 1
+        crm:
+          type: string
+          nullable: true
+          example: "CRM/SP 123456"
+      required:
+        - id_usuario
+        - nome
+        - email
+        - tipo_usuario
+        - status
+
+    Consulta:
+      type: object
+      properties:
+        id_consulta:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        id_usuario:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        id_medico:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        data:
+          type: string
+          format: date-time
+          example: "2023-12-15T14:30:00Z"
+        descricao:
+          type: string
+          example: "Consulta de rotina"
+        status:
+          type: integer
+          enum: [1, 2, 3]
+          description: "1-AGENDADA, 2-CONCLUIDA, 3-CANCELADA"
+          example: 1
+      required:
+        - id_consulta
+        - id_medico
+        - data
+        - status
+
+    Notificacao:
+      type: object
+      properties:
+        id_notificacao:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        id_consulta:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        data:
+          type: string
+          format: date-time
+          example: "2023-12-15T14:30:00Z"
+        lembrete:
+          type: string
+          example: "Lembrete da consulta"
+      required:
+        - id_notificacao
+        - id_consulta
+        - data
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "medico@clinix.com"
+        senha:
+          type: string
+          example: "senha123"
+      required:
+        - email
+        - senha
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "Use o token JWT obtido em /auth/login no formato: Bearer {token}"
+
+security:
+  - bearerAuth: []
