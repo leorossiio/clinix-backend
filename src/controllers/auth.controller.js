@@ -8,7 +8,13 @@ export const login = async (req, res) => {
   const { data: usuario, error } = await buscarUsuarioPorEmail(email);
   if (error || !usuario) return res.status(401).json({ error: 'Credenciais inválidas.' });
 
-  if (usuario.senha !== senha) return res.status(401).json({ error: 'Credenciais inválidas.' });
+  if (usuario.status !== 0) {
+    return res.status(403).json({ error: 'Usuário inativo ou excluído.' });
+  }
+
+  if (usuario.senha !== senha) {
+    return res.status(401).json({ error: 'Credenciais inválidas.' });
+  }
 
   const token = jwt.sign(
     {
