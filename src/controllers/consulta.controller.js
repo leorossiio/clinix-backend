@@ -191,3 +191,35 @@ export const agendarConsulta = async (req, res) => {
   if (dbError || !data) return res.status(500).json({ error: dbError.message });
   res.json({ message: "Consulta agendada com sucesso." });
 };
+
+export const reagendarConsulta = async (req, res) => {
+  const { id } = req.params;
+
+  const dados = {
+    motivo_cancelamento: null,
+    status: StatusConsulta.AGENDADO
+  };
+
+  const { error } = schemaId.validate(id);
+  if (error) return res.status(400).json({ error: "ID inválido" });
+
+  const { data, error: dbError } = await atualizarConsulta(id, dados);
+  if (dbError || !data) return res.status(500).json({ error: dbError.message });
+  res.json({ message: "Consulta reagendada com sucesso." });
+};
+
+export const cancelarConsulta = async (req, res) => {
+  const { id } = req.params;
+
+  const dados = {
+    motivo_cancelamento: req.body.motivo_cancelamento,
+    status: StatusConsulta.CANCELADA
+  };
+
+  const { error } = schemaId.validate(id);
+  if (error) return res.status(400).json({ error: "ID inválido" });
+
+  const { data, error: dbError } = await atualizarConsulta(id, dados);
+  if (dbError || !data) return res.status(500).json({ error: dbError.message });
+  res.json({ message: "Consulta cancelada com sucesso." });
+};

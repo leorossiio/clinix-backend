@@ -7,6 +7,8 @@ import {
     editarConsulta,
     excluirConsulta,
     agendarConsulta,
+    reagendarConsulta,
+    cancelarConsulta,
     listarConsultasAgendadas
 } from '../controllers/consulta.controller.js';
 import { autenticacao, autorizar } from '../middlewares/auth.middleware.js';
@@ -267,5 +269,84 @@ router.delete('/:id', autenticacao, autorizar([tipoUsuario.MEDICO, tipoUsuario.A
  *         description: Acesso não autorizado
  */
 router.put('/:id/agendar', validarAgendamentoConsulta, autenticacao, autorizar([tipoUsuario.USUARIO]), agendarConsulta);
+
+/**
+ * @swagger
+ ** /consultas/{id_consulta}/reagendar:
+ *   put:
+ *     tags:
+ *       - Consultas
+ *     summary: Reagenda consulta
+ *     description: Reagenda uma consulta (requer autenticação USUARIO)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id_consulta
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               motivo_cancelamento:
+ *                 type: string
+ *             required:
+ *               - motivo_cancelamento
+ *           example:
+ *             motivo_cancelamento: "Paciente desistiu"
+ *     responses:
+ *       '200':
+ *         description: Consulta agendada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Consulta'
+ *       '400':
+ *         description: Dados inválidos
+ *       '403':
+ *         description: Acesso não autorizado
+ *       '404':
+ *         description: Consulta não encontrada
+ */
+router.put('/:id/reagendar', reagendarConsulta);
+
+/**
+ * @swagger
+ * /consultas/{id_consulta}/cancelar:
+ *   put:
+ *     tags:
+ *       - Consultas
+ *     summary: Cancela consulta
+ *     description: Cancela uma consulta (requer autenticação USUARIO)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id_consulta
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Consulta cancelada com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Consulta'
+ *       '400':
+ *         description: Dados inválidos
+ *       '403':
+ *         description: Acesso não autorizado
+ *       '404':
+ *         description: Consulta não encontrada
+ */
+router.put('/:id/cancelar', cancelarConsulta);
 
 export default router;

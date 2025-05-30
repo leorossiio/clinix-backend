@@ -17,6 +17,7 @@ CREATE TABLE consulta (
   id_medico UUID NOT NULL,
   data TIMESTAMP NOT NULL,
   descricao VARCHAR(255),
+  motivo_cancelamento VARCHAR(255),
   status INTEGER NOT NULL
 
   CONSTRAINT fk_consulta_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),

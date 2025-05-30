@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Clinix API
-  version: 1.0.0
+  version: 1.0.1
   description: API completa para o sistema Clinix com suporte para testes diretos
   contact:
     name: Suporte Clinix
@@ -409,6 +409,81 @@ paths:
         '500':
           description: Erro interno
 
+  /consultas/{id_consulta}/reagendar:
+    put:
+      tags:
+        - Consultas
+      summary: Reagenda consulta
+      description: Reagenda uma consulta (requer autenticação USUARIO)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Consulta reagendada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+  
+  /consultas/{id_consulta}/cancelar:
+    put:
+      tags:
+        - Consultas
+      summary: Cancela consulta
+      description: Cancela uma consulta (requer autenticação USUARIO)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_consulta
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                motivo_cancelamento:
+                  type: string
+              required:
+                - motivo_cancelamento
+            example:
+              motivo_cancelamento: "Paciente desistiu"
+      responses:
+        '200':
+          description: Consulta cancelada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+        '500':
+          description: Erro interno
+
   /notificacoes:
     get:
       tags:
@@ -536,6 +611,10 @@ components:
           enum: [1, 2, 3]
           description: "1-AGENDADA, 2-CONCLUIDA, 3-CANCELADA"
           example: 1
+        motivo_cancelamento:
+          type: string
+          nullable: true
+          example: "Paciente desistiu"
       required:
         - id_consulta
         - id_medico
