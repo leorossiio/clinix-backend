@@ -30,17 +30,17 @@ app.use('/api-docs',
   })
 );
 
+app.use('/usuarios', usuarioRoutes);
+app.use('/consultas', consultaRoutes);
+app.use('/notificacoes', notificacaoRoutes);
+app.use('/auth', authRoutes);
+
 app.get('/env-check', (req, res) => {
   res.json({
     SUPABASE_KEY: process.env.SUPABASE_KEY ? '✔️ definida' : '❌ não definida',
     JWT_SECRET: process.env.JWT_SECRET ? '✔️ definida' : '❌ não definida'
   });
 });
-
-app.use('/usuarios', usuarioRoutes);
-app.use('/consultas', consultaRoutes);
-app.use('/notificacoes', notificacaoRoutes);
-app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
   res.send('API Clinix está funcionando. Acesse <a href="/api-docs">/api-docs</a> para a documentação interativa.');
