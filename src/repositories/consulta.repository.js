@@ -49,3 +49,32 @@ export const buscarConsultaPorMedicoComStatus = async (id_medico) => {
     return { data, error };
   };
   
+export const consultaReagendamento = async (id_usuario) => {
+  const { data, error } = await supabase
+    .from('consulta')
+    .select('*')
+    .eq('status', StatusConsulta.CANCELADA)
+    .eq('id_usuario', id_usuario)
+    .order('data_cancelamento', { ascending: false }) // mais recente
+    .limit(1);
+
+  const consulta = data && data.length > 0 ? data[0] : null;
+
+  if (!consulta) {
+    return { data: null, error: null };
+  }
+
+  const dataCancelamento = new Date(consulta.data_cancelamento);
+
+  const dataLimite = new Date(dataCancelamento);
+  dataLimite.setDate(dataLimite.getDate() + 3);
+
+  const agora = new Date();
+
+  if (agora <= dataLimite) {
+    return { data, error: null };
+  }
+
+  return { data: null, error: null };
+  };
+  

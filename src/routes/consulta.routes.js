@@ -9,7 +9,8 @@ import {
     agendarConsulta,
     reagendarConsulta,
     cancelarConsulta,
-    listarConsultasAgendadas
+    listarConsultasAgendadas,
+    consultarReagendamento
 } from '../controllers/consulta.controller.js';
 import { autenticacao, autorizar } from '../middlewares/auth.middleware.js';
 import { validarConsulta, validarConsultaUpdate, validarAgendamentoConsulta } from '../middlewares/validar.consulta.js';
@@ -348,5 +349,38 @@ router.put('/:id/reagendar', reagendarConsulta);
  *         description: Consulta não encontrada
  */
 router.put('/:id/cancelar', cancelarConsulta);
+
+/**
+ * @swagger
+ * /consultas/{id_usuario}/autenticar-consulta:
+ *   get:
+ *     tags:
+ *       - Consultas
+ *     summary: Verificar se há uma consulta para reagendamento
+ *     description: Verifica se há uma consulta para reagendamento (requer autenticação USUARIO)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id_usuario
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       '200':
+ *         description: Consulta encontrada
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Consulta'
+ *       '400':
+ *         description: Dados inválidos
+ *       '403':
+ *         description: Acesso não autorizado
+ *       '404':
+ *         description: Consulta não encontrada
+ */
+router.get('/:id/autenticar-consulta', autenticacao, autorizar([tipoUsuario.USUARIO]), consultarReagendamento);
 
 export default router;

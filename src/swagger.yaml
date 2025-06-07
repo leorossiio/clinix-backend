@@ -484,6 +484,35 @@ paths:
         '500':
           description: Erro interno
 
+  /consultas/{id_usuario}/autenticar-consulta:
+    get:
+      tags:
+        - Consultas
+      summary: Verificar se há uma consulta para reagendamento
+      description: Verifica se há uma consulta para reagendamento (requer autenticação USUARIO)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id_usuario
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Consulta encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Consulta'
+        '400':
+          description: Dados inválidos
+        '403':
+          description: Acesso não autorizado
+        '404':
+          description: Consulta não encontrada
+
   /notificacoes:
     get:
       tags:

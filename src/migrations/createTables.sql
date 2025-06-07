@@ -16,6 +16,7 @@ CREATE TABLE consulta (
   id_usuario UUID,
   id_medico UUID NOT NULL,
   data TIMESTAMP NOT NULL,
+  data_cancelamento TIMESTAMP,
   descricao VARCHAR(255),
   motivo_cancelamento VARCHAR(255),
   status INTEGER NOT NULL

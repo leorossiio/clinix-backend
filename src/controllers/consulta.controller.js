@@ -6,7 +6,8 @@ import {
     atualizarConsulta,
     excluirConsultaStatus,
   buscarConsultaPorMedicoComStatus,
-  buscarTodasConsultasAgendadas
+  buscarTodasConsultasAgendadas,
+  consultaReagendamento
 } from "../repositories/consulta.repository.js";
 import { StatusConsulta, tipoUsuario } from "../utils/enums/index.js";
 
@@ -213,7 +214,8 @@ export const cancelarConsulta = async (req, res) => {
 
   const dados = {
     motivo_cancelamento: req.body.motivo_cancelamento,
-    status: StatusConsulta.CANCELADA
+    status: StatusConsulta.CANCELADA,
+    data_cancelamento: new Date()
   };
 
   const { error } = schemaId.validate(id);
@@ -222,4 +224,33 @@ export const cancelarConsulta = async (req, res) => {
   const { data, error: dbError } = await atualizarConsulta(id, dados);
   if (dbError || !data) return res.status(500).json({ error: dbError.message });
   res.json({ message: "Consulta cancelada com sucesso." });
+};
+
+export const consultarReagendamento = async (req, res) => {
+  if (![tipoUsuario.USUARIO].includes(req.usuario.tipo)) {
+    return res.status(403).json({ error: "Acesso não autorizado." });
+  }
+
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ error: 'ID do usuário é obrigatório.' });
+    }
+
+    const { data, error: dbError } = await consultaReagendamento(id);
+
+    if (dbError) {
+      return res.status(500).json({ error: dbError.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Nenhuma consulta elegível para reagendamento encontrada.' });
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Erro no consultarReagendamento:', error);
+    return res.status(500).json({ error: 'Erro interno no servidor.' });
+  }
 };
