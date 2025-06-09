@@ -2,15 +2,18 @@ import supabase from '../supabase.js';
 import { StatusConsulta } from '../utils/enums/index.js';
 
 export const buscarTodasConsultas = async () => {
-    return await supabase.from('consulta').select('*').neq('status', StatusConsulta.CANCELADA);
+    return await supabase.from('consulta').select('*');
 };
 
 export const buscarTodasConsultasAgendadas = async (id_usuario) => {
     return await supabase.from('consulta').select('*').eq('id_usuario', id_usuario);
 };
 
-export const buscarTodasConsultasUsuario = async () => {
-    return await supabase.from('consulta').select('*').eq('status', StatusConsulta.NAOAGENDADO);
+export const buscarTodasConsultasUsuario = async (idUsuario) => {
+  return await supabase
+    .from('consulta')
+    .select('*')
+    .or(`status.eq.${StatusConsulta.NAOAGENDADO},id_usuario.eq.${idUsuario}`);
 };
 
 export const buscarConsultaPorId = async (id_consulta) => {

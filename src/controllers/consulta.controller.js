@@ -1,10 +1,10 @@
 import {
-    buscarTodasConsultas,
-    buscarTodasConsultasUsuario,
-    buscarConsultaPorId,
-    adicionarConsulta,
-    atualizarConsulta,
-    excluirConsultaStatus,
+  buscarTodasConsultas,
+  buscarTodasConsultasUsuario,
+  buscarConsultaPorId,
+  adicionarConsulta,
+  atualizarConsulta,
+  excluirConsultaStatus,
   buscarConsultaPorMedicoComStatus,
   buscarTodasConsultasAgendadas,
   consultaReagendamento
@@ -21,9 +21,9 @@ export const listarConsultas = async (req, res) => {
     return res.status(403).json({ error: "Acesso não autorizado." });
   }
 
-    const { data, error } = await buscarTodasConsultas();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+  const { data, error } = await buscarTodasConsultas();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 };
 
 export const listarConsultasAgendadas = async (req, res) => {
@@ -36,32 +36,35 @@ export const listarConsultasAgendadas = async (req, res) => {
   const { error } = schemaId.validate(id);
   if (error) return res.status(400).json({ error: "ID inválido" });
 
-  const { data, error:dbError } = await buscarTodasConsultasAgendadas();
+  const { data, error: dbError } = await buscarTodasConsultasAgendadas();
   if (dbError) return res.status(500).json({ error: dbError.message });
   res.json(data);
 };
 
 export const listarConsultasUsuario = async (req, res) => {
-  if (![tipoUsuario.USUARIO].includes(req.usuario.tipo)) {
+  if (req.usuario.tipo !== tipoUsuario.USUARIO) {
     return res.status(403).json({ error: "Acesso não autorizado." });
   }
 
-    const { data, error } = await buscarTodasConsultasUsuario();
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+  const idUsuario = req.usuario.id;
+
+  const { data, error } = await buscarTodasConsultasUsuario(idUsuario);
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json(data);
 };
 
 export const obterConsultaPorId = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const { error } = schemaId.validate(id);
+  const { error } = schemaId.validate(id);
   if (error) return res.status(400).json({ error: "ID inválido" });
 
-    const { data, error: dbError } = await buscarConsultaPorId(id);
+  const { data, error: dbError } = await buscarConsultaPorId(id);
   if (dbError || !data)
     return res.status(404).json({ error: "Consulta não encontrada." });
 
-    res.json(data);
+  res.json(data);
 };
 
 export const criarConsulta = async (req, res) => {
@@ -76,8 +79,8 @@ export const criarConsulta = async (req, res) => {
     descricao,
     status = StatusConsulta.NAOAGENDADO,
   } = req.body;
-  
-    const validaIdMedico = schemaId.validate(id_medico);
+
+  const validaIdMedico = schemaId.validate(id_medico);
   if (id_usuario == null) {
     const validaIdUsuario = schemaId.validate(id_usuario);
     if (validaIdUsuario.error) {
@@ -86,30 +89,30 @@ export const criarConsulta = async (req, res) => {
   }
   if (validaIdMedico.error) {
     return res.status(400).json({ error: "ID do médico  inválido." });
-    }
-  
-    if (id_usuario === id_medico) {
+  }
+
+  if (id_usuario === id_medico) {
     return res
       .status(400)
       .json({ error: "O médico e o paciente não podem ser a mesma pessoa." });
-    }
-  
+  }
+
   const { data: consultaExistente, error: buscaError } =
     await buscarConsultaPorMedicoComStatus(id_medico);
-  
-  if (buscaError)
+
+  /*if (buscaError)
     return res
       .status(500)
       .json({ error: "Erro ao buscar consulta existente." });
-  
-    if (consultaExistente) {
-      const dadosAtualizados = {
-        id_usuario,
-        data,
-        descricao,
+*/
+  if (consultaExistente) {
+    const dadosAtualizados = {
+      id_usuario,
+      data,
+      descricao,
       status: StatusConsulta.NAOAGENDADO,
-      };
-  
+    };
+
     const { error: erroReativar } = await atualizarConsulta(
       consultaExistente.id_consulta,
       dadosAtualizados
@@ -121,24 +124,24 @@ export const criarConsulta = async (req, res) => {
     }
 
     return res.status(200).json({ message: "Consulta reativada com sucesso." });
-    }
-  
-    const novaConsulta = {
-      id_consulta: uuidv4(),
-      id_usuario,
-      id_medico,
-      data,
-      descricao,
+  }
+
+  const novaConsulta = {
+    id_consulta: uuidv4(),
+    id_usuario,
+    id_medico,
+    data,
+    descricao,
     status,
-    };
-  
+  };
+
   const { data: nova, error: erroInserir } = await adicionarConsulta(
     novaConsulta
   );
-    if (erroInserir) return res.status(500).json({ error: erroInserir.message });
-  
-    res.status(201).json(nova);
-  };
+  if (erroInserir) return res.status(500).json({ error: erroInserir.message });
+
+  res.status(201).json(nova);
+};
 
 export const editarConsulta = async (req, res) => {
   if (![tipoUsuario.MEDICO, tipoUsuario.ADMIN].includes(req.usuario.tipo)) {
@@ -150,9 +153,9 @@ export const editarConsulta = async (req, res) => {
   const { error } = schemaId.validate(id);
   if (error) return res.status(400).json({ error: "ID inválido" });
 
-    const { data, error: dbError } = await atualizarConsulta(id, req.body);
+  const { data, error: dbError } = await atualizarConsulta(id, req.body);
   if (dbError || !data) return res.status(500).json({ error: dbError.message });
-    res.json(data);
+  res.json(data);
 };
 
 export const excluirConsulta = async (req, res) => {
@@ -160,14 +163,14 @@ export const excluirConsulta = async (req, res) => {
     return res.status(403).json({ error: "Acesso não autorizado." });
   }
 
-    const { id } = req.params;
-  
-    const { data: existente, error: getError } = await buscarConsultaPorId(id);
+  const { id } = req.params;
+
+  const { data: existente, error: getError } = await buscarConsultaPorId(id);
   if (getError || !existente)
     return res.status(404).json({ error: "Consulta não encontrada." });
-    
-      const { error } = await excluirConsultaStatus(id);
-      if (error) return res.status(500).json({ error: error.message });
+
+  const { error } = await excluirConsultaStatus(id);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ message: "Consulta excluída com sucesso." });
 };
 
