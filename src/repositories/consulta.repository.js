@@ -9,11 +9,11 @@ export const buscarTodasConsultasAgendadas = async (id_usuario) => {
     return await supabase.from('consulta').select('*').eq('id_usuario', id_usuario);
 };
 
-export const buscarTodasConsultasUsuario = async (idUsuario) => {
+export const buscarTodasConsultasUsuario = async () => {
   return await supabase
     .from('consulta')
     .select('*')
-    .or(`status.eq.${StatusConsulta.NAOAGENDADO},id_usuario.eq.${idUsuario}`);
+    .eq("status", StatusConsulta.NAOAGENDADO);
 };
 
 export const buscarConsultaPorId = async (id_consulta) => {

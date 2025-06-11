@@ -31,27 +31,19 @@ export const listarConsultasAgendadas = async (req, res) => {
     return res.status(403).json({ error: "Acesso não autorizado." });
   }
 
-  const { id } = req.params;
-
-  const { error } = schemaId.validate(id);
-  if (error) return res.status(400).json({ error: "ID inválido" });
-
   const { data, error: dbError } = await buscarTodasConsultasAgendadas();
   if (dbError) return res.status(500).json({ error: dbError.message });
   res.json(data);
 };
 
 export const listarConsultasUsuario = async (req, res) => {
-  if (req.usuario.tipo !== tipoUsuario.USUARIO) {
+  if (![tipoUsuario.USUARIO].includes(req.usuario.tipo)) {
     return res.status(403).json({ error: "Acesso não autorizado." });
   }
 
-  const idUsuario = req.usuario.id;
-
-  const { data, error } = await buscarTodasConsultasUsuario(idUsuario);
-  if (error) return res.status(500).json({ error: error.message });
-
-  res.json(data);
+    const { data, error } = await buscarTodasConsultasUsuario();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 };
 
 export const obterConsultaPorId = async (req, res) => {
