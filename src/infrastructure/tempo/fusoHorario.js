@@ -32,7 +32,9 @@ export function lerInstanteDoBanco(valor, fuso) {
 export function formatarParaBanco(instante, fuso) {
   if (!instante) return null;
   const deslocamento = deslocamentoMs(instante, fuso);
-  const parede = new Date(instante.getTime() + deslocamento).toISOString().slice(0, 19);
+  // "AAAA-MM-DDTHH:mm:ss", mais ".sss" só quando há milissegundos a preservar.
+  const tamanho = instante.getMilliseconds() === 0 ? 19 : 23;
+  const parede = new Date(instante.getTime() + deslocamento).toISOString().slice(0, tamanho);
   return `${parede}${formatarDeslocamento(deslocamento)}`;
 }
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## Não publicado
+
+### Operação e observabilidade
+
+- **OpenTelemetry**: traces (HTTP, Express e PostgreSQL), métricas e logs enviados por OTLP a um coletor. Liga só com `OTEL_EXPORTER_OTLP_ENDPOINT` ([ADR 0005](docs/adr/0005-telemetria-com-opentelemetry-e-eventos-de-dominio.md)).
+- **Logs estruturados** em JSON (pino), com `trace_id`, `span_id` e `x-request-id` em cada linha; credenciais são ocultadas.
+- **Métricas de negócio** a partir de eventos de domínio: horários abertos, agendamentos e cancelamentos por especialidade, conflitos de agendamento e logins por resultado.
+- `x-request-id` em toda resposta, reaproveitado quando enviado pelo proxy.
+- `/ready` (prontidão: a API alcança o banco), além do `/health` (vivacidade).
+
+### Banco de dados
+
+- **Adaptador PostgreSQL** (`BANCO=postgres` + `DATABASE_URL`), validado pela mesma suíte de contrato; migrations aplicadas ao iniciar ([ADR 0006](docs/adr/0006-postgresql-alem-do-supabase.md)).
+- `SEMEAR_DEMONSTRACAO=true` cria os dados de demonstração se o banco estiver vazio.
+- Corrigido: datas perdiam os milissegundos ao serem gravadas (encontrado pela suíte de contrato contra PostgreSQL).
+
+### Engenharia
+
+- Teste de concorrência: dois pacientes agendando o mesmo horário ao mesmo tempo; um consegue e o outro recebe conflito.
+- O Jenkins roda os testes de contrato contra um PostgreSQL efêmero.
+- A imagem Docker inclui as migrations e sobe com a instrumentação.
+
 ## 2.0.0
 
 Reescrita da API em camadas (domínio, aplicação, infraestrutura, HTTP) com testes automatizados, correções de segurança e das regras de negócio. **Contém mudanças incompatíveis: publique junto com o frontend 2.0.0.**

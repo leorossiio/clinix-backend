@@ -1,16 +1,19 @@
 import { Usuario } from '../domain/usuario/Usuario.js';
 import { ConflitoError, NaoEncontradoError, RegraDeNegocioError } from '../domain/erros.js';
 import { exigirProprioUsuarioOuAdmin } from './autorizacao.js';
+import { Eventos, publicadorNulo } from './eventos.js';
 
 export class ServicoDeUsuarios {
   #usuarios;
   #hasher;
   #gerarId;
+  #eventos;
 
-  constructor({ usuarios, hasher, gerarId }) {
+  constructor({ usuarios, hasher, gerarId, eventos = publicadorNulo }) {
     this.#usuarios = usuarios;
     this.#hasher = hasher;
     this.#gerarId = gerarId;
+    this.#eventos = eventos;
   }
 
   /** @returns {Promise<{ usuario: Usuario, reativado: boolean }>} */
@@ -21,11 +24,13 @@ export class ServicoDeUsuarios {
     if (existente) {
       existente.reativarComoPaciente({ nome, senhaHash });
       await this.#usuarios.atualizar(existente);
+      this.#eventos.publicar({ tipo: Eventos.PACIENTE_CADASTRADO, reativado: true });
       return { usuario: existente, reativado: true };
     }
 
     const usuario = Usuario.registrarPaciente({ id: this.#gerarId(), nome, email, senhaHash });
     await this.#usuarios.inserir(usuario);
+    this.#eventos.publicar({ tipo: Eventos.PACIENTE_CADASTRADO, reativado: false });
     return { usuario, reativado: false };
   }
 

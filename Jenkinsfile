@@ -65,18 +65,33 @@ pipeline {
             }
           }
         }
-        stage('Testes') {
-          steps {
-            // Inclui cobertura com limites mínimos definidos em vitest.config.js:
-            // abaixo deles, o build falha.
-            sh 'npm run test:ci'
-          }
-          post {
-            always {
-              junit testResults: 'reports/junit.xml', allowEmptyResults: false
-              recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/cobertura-coverage.xml']])
+      }
+    }
+
+    stage('Testes') {
+      steps {
+        script {
+          // PostgreSQL efêmero só para este build: a suíte de contrato dos
+          // repositórios roda contra um banco real, não só contra o dublê em memória.
+          docker.image('postgres:17-alpine').withRun('-e POSTGRES_PASSWORD=teste -e POSTGRES_DB=clinix_teste') { banco ->
+            sh "for i in \$(seq 1 30); do docker exec ${banco.id} pg_isready -U postgres && break; sleep 1; done"
+            docker.image('node:22-alpine').inside("--link ${banco.id}:banco") {
+              withEnv([
+                "npm_config_cache=${WORKSPACE}/.npm",
+                'POSTGRES_TEST_URL=postgres://postgres:teste@banco:5432/clinix_teste',
+              ]) {
+                // Inclui cobertura com limites mínimos definidos em vitest.config.js:
+                // abaixo deles, o build falha.
+                sh 'npm run test:ci'
+              }
             }
           }
+        }
+      }
+      post {
+        always {
+          junit testResults: 'reports/junit.xml', allowEmptyResults: false
+          recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage/cobertura-coverage.xml']])
         }
       }
     }

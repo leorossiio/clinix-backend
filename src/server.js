@@ -7,30 +7,44 @@ import { semearDadosDeDemonstracao } from './infrastructure/memoria/dadosDeDemon
 
 /**
  * Ponto de entrada do processo.
- *   npm start              → usa o Supabase (variáveis do .env ou do ambiente)
+ *   npm start              → banco definido por BANCO (supabase | postgres | memoria)
  *   npm run dev:memoria    → banco em memória com dados de demonstração
+ *
+ * A telemetria (OpenTelemetry) é carregada antes deste arquivo, via
+ * `node --import ./src/instrumentacao.js` — ver instrumentacao.js.
  */
 if (existsSync('.env')) process.loadEnvFile('.env');
 
 const config = carregarConfiguracao(variaveisDeAmbiente());
 const dependencias = montarDependencias(config);
+const { logger } = dependencias;
 
-if (config.banco === 'memoria') {
-  await semearDadosDeDemonstracao(dependencias);
-  console.warn(
-    '⚠️  BANCO=memoria: dados de demonstração, apagados ao reiniciar. Senha de todos: clinix123',
-  );
+const migrationsAplicadas = await dependencias.prepararBanco();
+if (migrationsAplicadas.length > 0) logger.info({ migrationsAplicadas }, 'schema atualizado');
+
+if (config.banco === 'memoria' || config.semearDemonstracao) {
+  if (await semearDadosDeDemonstracao(dependencias)) {
+    logger.warn('dados de demonstração criados; a senha de todos os usuários é clinix123');
+  }
 }
 
 const servidor = criarApp(dependencias, config).listen(config.porta, () => {
-  console.info(`✅ Clinix API em http://localhost:${config.porta} (banco: ${config.banco})`);
-  console.info(`📄 Documentação em http://localhost:${config.porta}/api-docs`);
+  logger.info(
+    { porta: config.porta, banco: config.banco },
+    `Clinix API em http://localhost:${config.porta} (documentação em /api-docs)`,
+  );
 });
 
 // Plataformas de deploy enviam SIGTERM antes de parar o container: termina as
-// requisições em andamento em vez de derrubá-las.
+// requisições em andamento e fecha as conexões com o banco.
 for (const sinal of ['SIGTERM', 'SIGINT']) {
-  process.on(sinal, () => servidor.close(() => process.exit(0)));
+  process.on(sinal, () => {
+    logger.info({ sinal }, 'encerrando');
+    servidor.close(async () => {
+      await dependencias.encerrar();
+      process.exit(0);
+    });
+  });
 }
 
 function variaveisDeAmbiente() {

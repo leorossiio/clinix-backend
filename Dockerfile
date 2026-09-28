@@ -14,10 +14,12 @@ COPY --from=dependencias /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
 COPY docs/openapi.yaml ./docs/openapi.yaml
+COPY database/migrations ./database/migrations
 
 # Nunca rodar como root dentro do container.
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
   CMD wget -qO- "http://127.0.0.1:${PORT:-3000}/health" || exit 1
-CMD ["node", "src/server.js"]
+# A instrumentação só liga se OTEL_EXPORTER_OTLP_ENDPOINT estiver definida.
+CMD ["node", "--import", "./src/instrumentacao.js", "src/server.js"]

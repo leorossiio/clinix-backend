@@ -6,8 +6,12 @@
  * Referência de todas as variáveis: .env.example
  */
 
-const BANCOS_SUPORTADOS = ['supabase', 'memoria'];
+const BANCOS_SUPORTADOS = ['supabase', 'postgres', 'memoria'];
 const TAMANHO_MINIMO_SEGREDO_JWT = 32;
+const VARIAVEIS_DO_BANCO = {
+  supabase: ['SUPABASE_URL', 'SUPABASE_KEY'],
+  postgres: ['DATABASE_URL'],
+};
 
 export function carregarConfiguracao(env = process.env) {
   const banco = env.BANCO ?? 'supabase';
@@ -15,10 +19,7 @@ export function carregarConfiguracao(env = process.env) {
     throw new Error(`BANCO deve ser um de: ${BANCOS_SUPORTADOS.join(', ')}.`);
   }
 
-  const obrigatorias = [
-    'JWT_SECRET',
-    ...(banco === 'supabase' ? ['SUPABASE_URL', 'SUPABASE_KEY'] : []),
-  ];
+  const obrigatorias = ['JWT_SECRET', ...(VARIAVEIS_DO_BANCO[banco] ?? [])];
   const ausentes = obrigatorias.filter((nome) => !env[nome]);
   if (ausentes.length > 0) {
     throw new Error(`Variáveis de ambiente obrigatórias ausentes: ${ausentes.join(', ')}.`);
@@ -36,6 +37,10 @@ export function carregarConfiguracao(env = process.env) {
     banco,
     supabaseUrl: env.SUPABASE_URL,
     supabaseChave: env.SUPABASE_KEY,
+    urlDoPostgres: env.DATABASE_URL,
+    // Cria usuários e horários de exemplo se o banco estiver vazio (Docker Compose, demos).
+    semearDemonstracao: env.SEMEAR_DEMONSTRACAO === 'true',
+    nivelDeLog: env.LOG_LEVEL ?? 'info',
     jwtSegredo: env.JWT_SECRET,
     jwtExpiracao: env.JWT_EXPIRES_IN ?? '8h',
     custoBcrypt: Number(env.BCRYPT_COST ?? 10),

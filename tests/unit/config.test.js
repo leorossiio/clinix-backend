@@ -17,6 +17,12 @@ describe('configuração', () => {
     expect(carregarConfiguracao({ JWT_SECRET: SEGREDO, BANCO: 'memoria' }).banco).toBe('memoria');
   });
 
+  it('no modo postgres exige a URL do banco', () => {
+    expect(() => carregarConfiguracao({ JWT_SECRET: SEGREDO, BANCO: 'postgres' })).toThrow(
+      /DATABASE_URL/,
+    );
+  });
+
   it('recusa segredo JWT curto demais para ser seguro', () => {
     expect(() => carregarConfiguracao({ ...ambienteSupabase, JWT_SECRET: 'curto' })).toThrow(
       /JWT_SECRET/,

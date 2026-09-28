@@ -17,16 +17,17 @@ export const SENHA_PADRAO = 'senha123';
  * direto no repositório — é só preparação; as verificações dos testes
  * passam sempre pela API.
  */
-export function montarCenario(variaveis = {}) {
+export function montarCenario(variaveis = {}, { eventos } = {}) {
   const config = carregarConfiguracao({
     BANCO: 'memoria',
     JWT_SECRET: 'segredo-de-teste-com-mais-de-32-caracteres',
     BCRYPT_COST: '4',
     LOGIN_RATE_LIMIT: '1000',
+    LOG_LEVEL: 'silent',
     ...variaveis,
   });
   const relogio = relogioFixo();
-  const dependencias = montarDependencias(config, { relogio });
+  const dependencias = montarDependencias(config, { relogio, eventos });
   const http = supertest(criarApp(dependencias, config));
   const { repositorios, hasher } = dependencias;
 
@@ -57,6 +58,7 @@ export function montarCenario(variaveis = {}) {
     http,
     relogio,
     repositorios,
+    servicos: dependencias.servicos,
     config,
     criarPaciente: (nome = 'Paciente') => criarUsuario({ tipo: TipoUsuario.PACIENTE, nome }),
     criarMedico: (nome = 'Dra. Médica', especialidade = 0) =>

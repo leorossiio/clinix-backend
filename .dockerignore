@@ -3,7 +3,6 @@ reports
 coverage
 tests
 docs/historico
-database
 .git
 .env
 *.env
