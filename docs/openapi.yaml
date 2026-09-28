@@ -11,6 +11,9 @@ info:
 
     **Status da consulta:** `0` Disponível · `1` Agendada · `2` Concluída · `3` Cancelada.
 
+    **Correlação:** toda resposta traz o header `x-request-id` (reaproveitado se o cliente ou o proxy
+    enviar um). O mesmo id aparece nos logs da requisição, junto do `trace_id`.
+
     **Erros:** sempre no formato `{ "error": "mensagem" }`.
     `400` formato inválido · `401` não autenticado · `403` sem permissão ·
     `404` não encontrado · `409` conflito (ex.: e-mail em uso, horário alterado por outra pessoa) ·
@@ -39,7 +42,7 @@ paths:
   /health:
     get:
       tags: [Operação]
-      summary: Verificação de saúde (usada pelo pipeline e pelo balanceador)
+      summary: Vivacidade (o processo está de pé)
       security: []
       responses:
         '200':
@@ -47,6 +50,25 @@ paths:
           content:
             application/json:
               schema: { type: object, properties: { status: { type: string, example: ok } } }
+
+  /ready:
+    get:
+      tags: [Operação]
+      summary: Prontidão (a API alcança o banco de dados)
+      description: Usada por orquestradores para só enviar tráfego quando a API consegue atender.
+      security: []
+      responses:
+        '200':
+          description: Pronta
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { type: string, example: pronto } } }
+        '503':
+          description: Banco indisponível
+          content:
+            application/json:
+              schema:
+                { type: object, properties: { status: { type: string, example: indisponivel } } }
 
   /auth/login:
     post:

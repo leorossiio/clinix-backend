@@ -13,6 +13,7 @@ API REST do Clinix, sistema de agendamento de consultas médicas. Pacientes agen
 - [Arquitetura](#arquitetura)
 - [Regras de negócio](#regras-de-negócio)
 - [Endpoints](#endpoints)
+- [Observabilidade](#observabilidade)
 - [Testes](#testes)
 - [CI/CD com Jenkins](#cicd-com-jenkins)
 - [Modelo de dados](#modelo-de-dados)
@@ -21,6 +22,10 @@ API REST do Clinix, sistema de agendamento de consultas médicas. Pacientes agen
 ## Como rodar
 
 Requisitos: Node.js 20.12 ou superior.
+
+**O jeito mais rápido é o Docker Compose do repositório `clinix-infra`**, que sobe API, frontend, PostgreSQL e a pilha de observabilidade com um comando.
+
+Para rodar só a API:
 
 ```bash
 npm install
@@ -31,7 +36,15 @@ npm run dev:memoria
 
 Usuários de demonstração (senha `clinix123` para todos): `paciente@clinix.dev`, `medica@clinix.dev`, `medico@clinix.dev`, `admin@clinix.dev`. Os dados somem ao reiniciar.
 
-Para usar o Supabase, copie `.env.example` para `.env`, preencha `JWT_SECRET` e `SUPABASE_KEY` e rode:
+Para usar um banco de verdade, copie `.env.example` para `.env`, preencha `JWT_SECRET` e escolha o banco com `BANCO`:
+
+| `BANCO`    | Precisa de                      | Uso                                                           |
+| ---------- | ------------------------------- | ------------------------------------------------------------- |
+| `supabase` | `SUPABASE_URL` e `SUPABASE_KEY` | Produção                                                      |
+| `postgres` | `DATABASE_URL`                  | Docker Compose, CI e qualquer PostgreSQL; migrations ao subir |
+| `memoria`  | nada                            | Desenvolvimento e demonstração                                |
+
+Depois:
 
 ```bash
 npm run dev      # recarrega ao salvar
@@ -68,7 +81,7 @@ interfaces/http  ──▶  application  ──▶  domain
        └──────── container.js (monta tudo) │
                            │               │
                    infrastructure ─────────┘
-          (Supabase, memória, bcrypt, JWT, fuso horário)
+   (Supabase, PostgreSQL, memória, bcrypt, JWT, fuso, telemetria)
 ```
 
 ```
@@ -78,16 +91,20 @@ src/
 │   ├── usuario/            Usuario, perfis, especialidades
 │   ├── notificacao/        Lembrete de consulta
 │   └── erros.js            Erros de negócio (viram status HTTP na borda)
-├── application/            Casos de uso + autorização por dono do recurso
+├── application/            Casos de uso, autorização por dono do recurso e porta de eventos de domínio
 ├── infrastructure/
-│   ├── supabase/           Repositórios reais (único lugar que conhece tabelas/colunas)
+│   ├── supabase/           Repositórios sobre o Supabase (produção)
+│   ├── postgres/           Repositórios sobre PostgreSQL + migrador
+│   ├── linhas.js           Mapeamento linha ↔ entidade, comum aos dois bancos
 │   ├── memoria/            Repositórios em memória (testes e modo demonstração)
+│   ├── observabilidade/    Logger (pino) e eventos de domínio → métricas e logs
 │   ├── seguranca/          Hash de senha (bcrypt) e tokens (JWT)
 │   └── tempo/              Conversão de fuso na fronteira com o banco
 ├── interfaces/http/        Express: rotas, validação (Joi), apresentação JSON, erros
 ├── container.js            Raiz de composição: escolhe as implementações
 ├── config.js               Lê e valida variáveis de ambiente
-└── server.js               Sobe o servidor
+├── instrumentacao.js       OpenTelemetry (carregado com node --import)
+└── server.js               Migrations, dados de demonstração e servidor
 ```
 
 Convenções:
@@ -130,7 +147,19 @@ Detalhes, exemplos e schemas no Swagger (`/api-docs`), gerado a partir de [docs/
 | `PUT` `DELETE` | `/consultas/:id`                                      | médico responsável ou administrador   |
 | `PUT`          | `/consultas/:id/agendar` · `/cancelar` · `/reagendar` | paciente                              |
 | `GET` `POST`   | `/notificacoes`                                       | médico responsável ou administrador   |
-| `GET`          | `/health`                                             | público                               |
+| `GET`          | `/health` · `/ready`                                  | público                               |
+
+## Observabilidade
+
+Com `OTEL_EXPORTER_OTLP_ENDPOINT` definida, a API envia os três sinais por OpenTelemetry ([ADR 0005](docs/adr/0005-telemetria-com-opentelemetry-e-eventos-de-dominio.md)):
+
+- **Traces** de cada requisição, do Express até cada query no PostgreSQL.
+- **Métricas** HTTP (taxa, erros e latência por rota), do banco (latência por operação) e **de negócio**: horários abertos, agendamentos e cancelamentos por especialidade, conflitos de agendamento e logins por resultado.
+- **Logs** JSON com `trace_id`, `span_id` e `x-request-id`: do log se chega ao trace e vice-versa.
+
+As métricas de negócio não são chamadas espalhadas pelo código: os casos de uso publicam **eventos de domínio** (`application/eventos.js`), e a infraestrutura os transforma em contadores e logs. Sem a variável, a telemetria fica desligada e os logs continuam indo para a saída padrão.
+
+`/health` responde se o processo está de pé; `/ready`, se a API alcança o banco.
 
 ## Testes
 
@@ -140,16 +169,20 @@ Escritos em TDD (vermelho → verde), verificando **comportamento** por interfac
 | ----------- | --------------------------- | ------------------------------------------------------------------------ |
 | Domínio     | `tests/unit/domain`         | Regras de negócio, com relógio fixo                                      |
 | Adaptadores | `tests/unit/infrastructure` | Hash de senha (inclusive legado) e fuso horário                          |
-| Contrato    | `tests/contrato`            | Repositório em memória e Supabase se comportam igual                     |
+| Contrato    | `tests/contrato`            | Memória, PostgreSQL e Supabase se comportam igual                        |
 | API         | `tests/integracao/http`     | Fluxos completos via HTTP: autenticação, autorização, status e respostas |
+| Eventos     | `tests/integracao`          | Eventos publicados e concorrência real no agendamento                    |
 
 Os testes da API sobem a aplicação inteira com repositórios em memória (`tests/apoio/cenario.js`), então rodam em segundos e sem rede. O único dublê é o banco — e o contrato garante que ele se comporta como o real.
 
-Para rodar o contrato contra um Supabase **de testes** (os testes gravam dados — nunca use o de produção):
+Para rodar o contrato contra bancos reais (os testes gravam dados — nunca use os de produção):
 
 ```bash
+POSTGRES_TEST_URL=postgres://postgres:teste@localhost:5432/clinix_teste npm test
 SUPABASE_TEST_URL=https://<projeto-de-teste>.supabase.co SUPABASE_TEST_KEY=<chave> npm test
 ```
+
+No primeiro uso contra PostgreSQL, o contrato encontrou um bug real: datas perdiam os milissegundos ao serem gravadas.
 
 A cobertura mínima (linhas 85%, branches 80%) é exigida em `vitest.config.js`; o build falha abaixo disso.
 
@@ -157,9 +190,10 @@ A cobertura mínima (linhas 85%, branches 80%) é exigida em `vitest.config.js`;
 
 O [Jenkinsfile](Jenkinsfile) define:
 
-1. **Build e testes** (container `node:22-alpine`): `npm ci` → lint, formatação e `npm audit` em paralelo → testes com cobertura (relatórios JUnit e Cobertura publicados no Jenkins).
-2. **Imagem Docker** (somente `main`): build da imagem e **smoke test** — sobe o container em modo memória e confere o `/health`.
-3. **Publicação e deploy** (somente `main` com o parâmetro `DEPLOY`): push para o registro e atualização do App Service no Azure.
+1. **Build e qualidade** (container `node:22-alpine`): `npm ci` → lint, formatação e `npm audit` em paralelo.
+2. **Testes** com um **PostgreSQL efêmero** ao lado: a suíte inteira, inclusive o contrato contra banco real, com cobertura (relatórios JUnit e Cobertura publicados no Jenkins).
+3. **Imagem Docker** (somente `main`): build da imagem e **smoke test** — sobe o container em modo memória e confere o `/health`.
+4. **Publicação e deploy** (somente `main` com o parâmetro `DEPLOY`): push para o registro e atualização do App Service no Azure.
 
 Plugins: Pipeline, Docker Pipeline, JUnit, Coverage, Workspace Cleanup e Timestamper. As credenciais esperadas estão descritas no topo do Jenkinsfile. Crie o job como _Multibranch Pipeline_ apontando para este repositório.
 
