@@ -44,6 +44,12 @@ describe('fuso horário na fronteira com o banco', () => {
       );
     });
 
+    it('preserva os milissegundos quando existem', () => {
+      expect(formatarParaBanco(new Date('2026-10-01T17:30:00.916Z'), SP)).toBe(
+        '2026-10-01T14:30:00.916-03:00',
+      );
+    });
+
     it('ida e volta preservam o instante', () => {
       const instante = new Date('2026-12-31T23:59:00Z');
 
