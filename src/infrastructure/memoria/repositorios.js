@@ -18,6 +18,7 @@ export function criarRepositoriosEmMemoria() {
     usuarios: new RepositorioDeUsuariosEmMemoria(),
     consultas: new RepositorioDeConsultasEmMemoria(),
     notificacoes: new RepositorioDeNotificacoesEmMemoria(),
+    verificarConexao: async () => true,
   };
 }
 

@@ -1,4 +1,5 @@
 import { CredenciaisInvalidasError } from '../domain/erros.js';
+import { Eventos, publicadorNulo } from './eventos.js';
 
 /**
  * Login e identificação de quem faz cada requisição.
@@ -10,14 +11,29 @@ export class ServicoDeAutenticacao {
   #hasher;
   #tokens;
   #hashFicticio;
+  #eventos;
 
-  constructor({ usuarios, hasher, tokens }) {
+  constructor({ usuarios, hasher, tokens, eventos = publicadorNulo }) {
     this.#usuarios = usuarios;
     this.#hasher = hasher;
     this.#tokens = tokens;
+    this.#eventos = eventos;
   }
 
-  async entrar({ email, senha }) {
+  async entrar(credenciais) {
+    try {
+      const resultado = await this.#autenticar(credenciais);
+      this.#eventos.publicar({ tipo: Eventos.LOGIN, resultado: 'sucesso' });
+      return resultado;
+    } catch (erro) {
+      if (erro instanceof CredenciaisInvalidasError) {
+        this.#eventos.publicar({ tipo: Eventos.LOGIN, resultado: 'falha' });
+      }
+      throw erro;
+    }
+  }
+
+  async #autenticar({ email, senha }) {
     const usuario = await this.#usuarios.buscarPorEmail(email);
 
     if (!usuario?.estaAtivo) {

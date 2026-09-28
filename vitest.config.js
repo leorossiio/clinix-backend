@@ -9,9 +9,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.js'],
-      // server.js só faz wiring de processo; o adaptador Supabase é coberto pelos
-      // testes de contrato quando há banco de teste (tests/contrato/supabase.test.js).
-      exclude: ['src/server.js', 'src/infrastructure/supabase/**'],
+      // server.js e instrumentacao.js só fazem wiring de processo. Os adaptadores
+      // de banco externo são cobertos pelos testes de contrato, que rodam quando há
+      // banco de teste (POSTGRES_TEST_URL no Jenkins; SUPABASE_TEST_* opcional).
+      exclude: [
+        'src/server.js',
+        'src/instrumentacao.js',
+        'src/infrastructure/supabase/**',
+        'src/infrastructure/postgres/**',
+      ],
       reporter: ['text', 'html', 'cobertura'],
       reportsDirectory: 'reports/coverage',
       thresholds: { lines: 85, functions: 85, branches: 80, statements: 85 },

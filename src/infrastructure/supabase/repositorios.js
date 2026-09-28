@@ -1,9 +1,15 @@
-import { Consulta } from '../../domain/consulta/Consulta.js';
 import { StatusConsulta } from '../../domain/consulta/StatusConsulta.js';
-import { Notificacao } from '../../domain/notificacao/Notificacao.js';
-import { Usuario, normalizarEmail } from '../../domain/usuario/Usuario.js';
+import { normalizarEmail } from '../../domain/usuario/Usuario.js';
 import { StatusUsuario, TipoUsuario } from '../../domain/usuario/enums.js';
 import { ConflitoError } from '../../domain/erros.js';
+import {
+  consultaParaLinha,
+  linhaParaConsulta,
+  linhaParaNotificacao,
+  linhaParaUsuario,
+  notificacaoParaLinha,
+  usuarioParaLinha,
+} from '../linhas.js';
 import { formatarParaBanco, lerInstanteDoBanco } from '../tempo/fusoHorario.js';
 
 /**
@@ -21,6 +27,10 @@ export function criarRepositoriosSupabase(cliente, { fusoHorario }) {
     usuarios: new RepositorioDeUsuariosSupabase(cliente),
     consultas: new RepositorioDeConsultasSupabase(cliente, tempo),
     notificacoes: new RepositorioDeNotificacoesSupabase(cliente, tempo),
+    verificarConexao: async () => {
+      resultado(await cliente.from('usuario').select('id_usuario').limit(1));
+      return true;
+    },
   };
 }
 
@@ -139,33 +149,12 @@ class RepositorioDeConsultasSupabase {
     return resultado(await consulta).map((linha) => this.#paraConsulta(linha));
   }
 
-  // A coluna do paciente se chama id_usuario por razões históricas.
   #paraLinha(consulta) {
-    const c = consulta.paraObjeto();
-    return {
-      id_consulta: c.id,
-      id_medico: c.idMedico,
-      id_usuario: c.idPaciente,
-      data: this.tempo.gravar(c.data),
-      descricao: c.descricao,
-      status: c.status,
-      motivo_cancelamento: c.motivoCancelamento,
-      data_cancelamento: this.tempo.gravar(c.dataCancelamento),
-    };
+    return consultaParaLinha(consulta, this.tempo);
   }
 
   #paraConsulta(linha) {
-    if (!linha) return null;
-    return Consulta.reconstituir({
-      id: linha.id_consulta,
-      idMedico: linha.id_medico,
-      idPaciente: linha.id_usuario,
-      data: this.tempo.ler(linha.data),
-      descricao: linha.descricao,
-      status: linha.status,
-      motivoCancelamento: linha.motivo_cancelamento,
-      dataCancelamento: this.tempo.ler(linha.data_cancelamento),
-    });
+    return linhaParaConsulta(linha, this.tempo);
   }
 }
 
@@ -176,56 +165,13 @@ class RepositorioDeNotificacoesSupabase {
   }
 
   async inserir(notificacao) {
-    const n = notificacao.paraObjeto();
-    resultado(
-      await this.tabela().insert({
-        id_notificacao: n.id,
-        id_consulta: n.idConsulta,
-        data: this.tempo.gravar(n.data),
-        lembrete: n.lembrete,
-      }),
-    );
+    resultado(await this.tabela().insert(notificacaoParaLinha(notificacao, this.tempo)));
   }
 
   async listarPorConsulta(idConsulta) {
     const linhas = resultado(
       await this.tabela().select('*').eq('id_consulta', idConsulta).order('data'),
     );
-    return linhas.map((linha) =>
-      Notificacao.reconstituir({
-        id: linha.id_notificacao,
-        idConsulta: linha.id_consulta,
-        lembrete: linha.lembrete,
-        data: this.tempo.ler(linha.data),
-      }),
-    );
+    return linhas.map((linha) => linhaParaNotificacao(linha, this.tempo));
   }
-}
-
-function usuarioParaLinha(usuario) {
-  const u = usuario.paraObjeto();
-  return {
-    id_usuario: u.id,
-    nome: u.nome,
-    email: u.email,
-    senha: u.senhaHash, // a coluna guarda o hash bcrypt, apesar do nome
-    tipo_usuario: u.tipo,
-    status: u.status,
-    especialidade: u.especialidade,
-    crm: u.crm,
-  };
-}
-
-function linhaParaUsuario(linha) {
-  if (!linha) return null;
-  return Usuario.reconstituir({
-    id: linha.id_usuario,
-    nome: linha.nome,
-    email: linha.email,
-    senhaHash: linha.senha,
-    tipo: linha.tipo_usuario,
-    status: linha.status,
-    especialidade: linha.especialidade,
-    crm: linha.crm,
-  });
 }

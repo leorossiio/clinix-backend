@@ -1,9 +1,15 @@
 import { Consulta } from '../domain/consulta/Consulta.js';
 import { consultaReagendavel } from '../domain/consulta/politicaDeReagendamento.js';
 import { exigirInstanteLivre } from '../domain/consulta/agenda.js';
-import { TipoUsuario } from '../domain/usuario/enums.js';
-import { AcessoNegadoError, NaoEncontradoError, RegraDeNegocioError } from '../domain/erros.js';
+import { Especialidade, TipoUsuario } from '../domain/usuario/enums.js';
+import {
+  AcessoNegadoError,
+  ConflitoError,
+  NaoEncontradoError,
+  RegraDeNegocioError,
+} from '../domain/erros.js';
 import { exigirGestaoDaConsulta, podeVerConsulta } from './autorizacao.js';
+import { Eventos, publicadorNulo } from './eventos.js';
 
 /**
  * Consulta pronta para exibição: a entidade mais os participantes e se o
@@ -23,12 +29,14 @@ export class ServicoDeConsultas {
   #usuarios;
   #relogio;
   #gerarId;
+  #eventos;
 
-  constructor({ consultas, usuarios, relogio, gerarId }) {
+  constructor({ consultas, usuarios, relogio, gerarId, eventos = publicadorNulo }) {
     this.#consultas = consultas;
     this.#usuarios = usuarios;
     this.#relogio = relogio;
     this.#gerarId = gerarId;
+    this.#eventos = eventos;
   }
 
   /**
@@ -79,11 +87,13 @@ export class ServicoDeConsultas {
       this.#relogio.agora(),
     );
     await this.#consultas.inserir(consulta);
-    return this.#visao(consulta);
+    const visao = await this.#visao(consulta);
+    this.#publicar(Eventos.HORARIO_ABERTO, visao);
+    return visao;
   }
 
   editar(id, alteracoes, solicitante) {
-    return this.#alterar(id, async (consulta, agora) => {
+    return this.#alterar(id, Eventos.CONSULTA_EDITADA, async (consulta, agora) => {
       exigirGestaoDaConsulta(solicitante, consulta);
       if (alteracoes.data) {
         const agenda = await this.#consultas.listarPorMedico(consulta.idMedico);
@@ -94,24 +104,26 @@ export class ServicoDeConsultas {
   }
 
   remover(id, solicitante) {
-    return this.#alterar(id, (consulta, agora) => {
+    return this.#alterar(id, Eventos.CONSULTA_REMOVIDA, (consulta, agora) => {
       exigirGestaoDaConsulta(solicitante, consulta);
       consulta.removerPelaClinica(agora);
     });
   }
 
   agendar(id, solicitante) {
-    return this.#alterar(id, (consulta, agora) => consulta.agendar(solicitante.id, agora));
+    return this.#alterar(id, Eventos.CONSULTA_AGENDADA, (consulta, agora) =>
+      consulta.agendar(solicitante.id, agora),
+    );
   }
 
   cancelar(id, motivo, solicitante) {
-    return this.#alterar(id, (consulta, agora) =>
+    return this.#alterar(id, Eventos.CONSULTA_CANCELADA, (consulta, agora) =>
       consulta.cancelarPeloPaciente(solicitante.id, motivo, agora),
     );
   }
 
   reagendar(id, solicitante) {
-    return this.#alterar(id, async (consulta, agora) => {
+    return this.#alterar(id, Eventos.CONSULTA_REAGENDADA, async (consulta, agora) => {
       // Se a própria consulta já tem um impedimento (prazo, dono...), deixamos
       // a entidade explicar qual é. Só então checamos a regra entre consultas.
       if (consulta.podeSerReagendadaPor(solicitante.id, agora)) {
@@ -124,13 +136,33 @@ export class ServicoDeConsultas {
     });
   }
 
-  /** Carrega, aplica a operação de domínio e grava com checagem de concorrência. */
-  async #alterar(id, operacao) {
+  /**
+   * Carrega, aplica a operação de domínio, grava com checagem de concorrência
+   * e publica o evento correspondente — só depois de gravar com sucesso.
+   */
+  async #alterar(id, tipoDoEvento, operacao) {
     const consulta = await this.#carregar(id);
     const statusAnterior = consulta.status;
     await operacao(consulta, this.#relogio.agora());
-    await this.#consultas.atualizar(consulta, { statusAnterior });
-    return this.#visao(consulta);
+    try {
+      await this.#consultas.atualizar(consulta, { statusAnterior });
+    } catch (erro) {
+      if (erro instanceof ConflitoError) {
+        this.#eventos.publicar({ tipo: Eventos.CONFLITO_DE_AGENDAMENTO, idConsulta: id });
+      }
+      throw erro;
+    }
+    const visao = await this.#visao(consulta);
+    this.#publicar(tipoDoEvento, visao);
+    return visao;
+  }
+
+  #publicar(tipo, { consulta, medico }) {
+    this.#eventos.publicar({
+      tipo,
+      idConsulta: consulta.id,
+      especialidade: Especialidade[medico?.especialidade] ?? 'Não informada',
+    });
   }
 
   async #carregar(id) {

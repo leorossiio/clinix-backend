@@ -81,6 +81,6 @@ export function tratarErros(erro, req, res, _next) {
   if (erro.type === 'entity.parse.failed') return res.status(400).json({ error: 'JSON inválido.' });
   if (erro.status === 413) return res.status(413).json({ error: 'Requisição grande demais.' });
 
-  console.error(`[erro] ${req.method} ${req.originalUrl}`, erro);
+  req.log.error({ err: erro }, 'erro inesperado');
   return res.status(500).json({ error: 'Erro interno. Tente novamente em instantes.' });
 }

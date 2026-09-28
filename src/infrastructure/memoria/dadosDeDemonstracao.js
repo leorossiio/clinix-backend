@@ -5,8 +5,14 @@ import { StatusUsuario, TipoUsuario } from '../../domain/usuario/enums.js';
 
 const SENHA_DEMONSTRACAO = 'clinix123';
 
-/** Popula o banco em memória com um cenário navegável: um usuário de cada perfil e alguns horários. */
+/**
+ * Popula o banco com um cenário navegável: um usuário de cada perfil e alguns
+ * horários. Idempotente: se o administrador de demonstração já existe, não faz nada.
+ *
+ * @returns {Promise<boolean>} se os dados foram criados agora
+ */
 export async function semearDadosDeDemonstracao({ repositorios, hasher, relogio }) {
+  if (await repositorios.usuarios.buscarPorEmail('admin@clinix.dev')) return false;
   const senhaHash = await hasher.gerarHash(SENHA_DEMONSTRACAO);
   const usuario = (nome, email, tipo, extras = {}) =>
     Usuario.reconstituir({
@@ -51,4 +57,5 @@ export async function semearDadosDeDemonstracao({ repositorios, hasher, relogio 
   );
   horarios[2].agendar(paciente.id, agora);
   for (const consulta of horarios) await repositorios.consultas.inserir(consulta);
+  return true;
 }
