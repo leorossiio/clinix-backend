@@ -1,0 +1,510 @@
+openapi: 3.0.3
+info:
+  title: Clinix API
+  version: 2.0.0
+  description: |
+    API de agendamento de consultas médicas.
+
+    **Autenticação:** faça login em `POST /auth/login`, clique em *Authorize* e cole o token.
+
+    **Perfis (`tipo_usuario`):** `0` Paciente · `1` Médico · `2` Administrador.
+
+    **Status da consulta:** `0` Disponível · `1` Agendada · `2` Concluída · `3` Cancelada.
+
+    **Erros:** sempre no formato `{ "error": "mensagem" }`.
+    `400` formato inválido · `401` não autenticado · `403` sem permissão ·
+    `404` não encontrado · `409` conflito (ex.: e-mail em uso, horário alterado por outra pessoa) ·
+    `422` regra de negócio violada · `429` excesso de tentativas de login.
+
+servers:
+  - url: /
+    description: Este servidor
+
+tags:
+  - name: Autenticação
+  - name: Usuários
+  - name: Consultas
+    description: |
+      Ciclo de vida: a clínica abre um horário (**Disponível**) → o paciente agenda (**Agendada**) →
+      o paciente pode cancelar com no mínimo 24h de antecedência (**Cancelada**) e desfazer o
+      cancelamento mais recente em até 3 dias (**reagendar**). A clínica pode remover consultas
+      ativas; essa remoção não pode ser desfeita pelo paciente.
+  - name: Notificações
+  - name: Operação
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [Operação]
+      summary: Verificação de saúde (usada pelo pipeline e pelo balanceador)
+      security: []
+      responses:
+        '200':
+          description: API no ar
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { type: string, example: ok } } }
+
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Autentica e devolve um token JWT
+      description: Limitado a um número de tentativas por IP a cada 15 minutos.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Login' }
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sessao' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '429': { description: Muitas tentativas. Aguarde alguns minutos. }
+
+  /usuarios:
+    post:
+      tags: [Usuários]
+      summary: Auto-cadastro de paciente
+      description: |
+        Sempre cria um **paciente**. Se o e-mail pertencer a uma conta excluída, ela é reativada
+        como paciente e a resposta é `200` em vez de `201`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CadastroDePaciente' }
+      responses:
+        '201':
+          description: Paciente cadastrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '200':
+          description: Conta excluída reativada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '409': { $ref: '#/components/responses/Conflito' }
+    get:
+      tags: [Usuários]
+      summary: Lista usuários ativos (somente administrador)
+      responses:
+        '200':
+          description: Usuários ativos
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Usuario' } }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+
+  /usuarios/medicos:
+    get:
+      tags: [Usuários]
+      summary: Lista médicos ativos
+      responses:
+        '200':
+          description: Médicos ativos
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Usuario' } }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+
+  /usuarios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Usuários]
+      summary: Obtém um usuário (o próprio, ou qualquer um se administrador)
+      responses:
+        '200':
+          description: Usuário
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+    put:
+      tags: [Usuários]
+      summary: Atualiza nome, e-mail e/ou senha (o próprio, ou qualquer um se administrador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AtualizacaoDeUsuario' }
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflito' }
+    delete:
+      tags: [Usuários]
+      summary: Exclui (logicamente) um usuário — somente administrador
+      description: O acesso do usuário excluído é bloqueado imediatamente, mesmo com token válido.
+      responses:
+        '204': { description: Usuário excluído }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /consultas:
+    get:
+      tags: [Consultas]
+      summary: Lista consultas conforme o perfil
+      description: |
+        - **Paciente:** horários disponíveis futuros + as próprias consultas (qualquer status).
+          O campo `reagendavel` indica a consulta cujo cancelamento ele ainda pode desfazer.
+        - **Médico:** a própria agenda.
+        - **Administrador:** todas.
+
+        Ordenadas da data mais distante para a mais próxima.
+      responses:
+        '200':
+          description: Consultas
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Consulta' } }
+        '401': { $ref: '#/components/responses/NaoAutenticado' }
+    post:
+      tags: [Consultas]
+      summary: Abre um horário (médico ou administrador)
+      description: |
+        O médico sempre abre na própria agenda (`id_medico` pode ser omitido).
+        O administrador deve informar `id_medico`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NovaConsulta' }
+      responses:
+        '201':
+          description: Horário aberto
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /consultas/{id}:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    get:
+      tags: [Consultas]
+      summary: Obtém uma consulta visível para o solicitante
+      responses:
+        '200':
+          description: Consulta
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+    put:
+      tags: [Consultas]
+      summary: Edita data e/ou descrição (médico responsável ou administrador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EdicaoDeConsulta' }
+      responses:
+        '200':
+          description: Consulta atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflito' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+    delete:
+      tags: [Consultas]
+      summary: Remove a consulta da agenda (médico responsável ou administrador)
+      description: A consulta passa a **Cancelada** pela clínica; o paciente não pode desfazer.
+      responses:
+        '200':
+          description: Consulta removida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /consultas/{id}/agendar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Consultas]
+      summary: Agenda um horário disponível para o paciente autenticado
+      responses:
+        '200':
+          description: Consulta agendada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '409': { $ref: '#/components/responses/Conflito' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /consultas/{id}/cancelar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Consultas]
+      summary: Cancela a própria consulta (paciente, com no mínimo 24h de antecedência)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo_cancelamento]
+              properties:
+                motivo_cancelamento:
+                  { type: string, maxLength: 255, example: Imprevisto no trabalho }
+      responses:
+        '200':
+          description: Consulta cancelada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '400': { $ref: '#/components/responses/DadosInvalidos' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /consultas/{id}/reagendar:
+    parameters:
+      - $ref: '#/components/parameters/Id'
+    put:
+      tags: [Consultas]
+      summary: Desfaz o cancelamento mais recente do paciente (em até 3 dias)
+      responses:
+        '200':
+          description: Consulta agendada novamente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Consulta' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+        '422': { $ref: '#/components/responses/RegraDeNegocio' }
+
+  /notificacoes:
+    get:
+      tags: [Notificações]
+      summary: Lista os lembretes de uma consulta (médico responsável ou administrador)
+      parameters:
+        - in: query
+          name: id_consulta
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Lembretes
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Notificacao' } }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+    post:
+      tags: [Notificações]
+      summary: Registra um lembrete para uma consulta (médico responsável ou administrador)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_consulta, lembrete]
+              properties:
+                id_consulta: { type: string, format: uuid }
+                lembrete: { type: string, maxLength: 1000, example: Trazer exames anteriores }
+      responses:
+        '201':
+          description: Lembrete registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Notificacao' }
+        '403': { $ref: '#/components/responses/AcessoNegado' }
+        '404': { $ref: '#/components/responses/NaoEncontrado' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    DadosInvalidos:
+      description: Formato inválido
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    NaoAutenticado:
+      description: Token ausente, inválido ou expirado — ou credenciais incorretas
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    AcessoNegado:
+      description: O perfil ou o usuário não tem permissão
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    NaoEncontrado:
+      description: Recurso inexistente ou não visível para o solicitante
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    Conflito:
+      description: Conflito com o estado atual
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+    RegraDeNegocio:
+      description: Regra de negócio violada
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Erro' }
+
+  schemas:
+    Erro:
+      type: object
+      properties:
+        error:
+          {
+            type: string,
+            example: O cancelamento só é permitido com no mínimo 24 horas de antecedência.,
+          }
+
+    Login:
+      type: object
+      required: [email, senha]
+      properties:
+        email: { type: string, format: email, example: paciente@clinix.dev }
+        senha: { type: string, example: clinix123 }
+
+    Sessao:
+      type: object
+      properties:
+        token: { type: string }
+        usuario: { $ref: '#/components/schemas/Usuario' }
+
+    CadastroDePaciente:
+      type: object
+      required: [nome, email, senha]
+      additionalProperties: false
+      properties:
+        nome: { type: string, maxLength: 255, example: Carla Souza }
+        email: { type: string, format: email, example: carla@email.com }
+        senha: { type: string, minLength: 6, maxLength: 72, example: segura123 }
+
+    AtualizacaoDeUsuario:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        nome: { type: string, maxLength: 255 }
+        email: { type: string, format: email }
+        senha: { type: string, minLength: 6, maxLength: 72 }
+
+    Usuario:
+      type: object
+      description: A senha nunca é devolvida pela API.
+      properties:
+        id_usuario: { type: string, format: uuid }
+        nome: { type: string }
+        email: { type: string, format: email }
+        tipo_usuario:
+          { type: integer, enum: [0, 1, 2], description: '0 Paciente · 1 Médico · 2 Administrador' }
+        status: { type: integer, enum: [0, 1], description: '0 Ativo · 1 Excluído' }
+        especialidade:
+          type: integer
+          nullable: true
+          enum: [0, 1, 2, 3, 4]
+          description: '0 Cardiologia · 1 Pediatria · 2 Ortopedia · 3 Dermatologia · 4 Neurologia'
+        crm: { type: string, nullable: true }
+
+    NovaConsulta:
+      type: object
+      required: [data]
+      additionalProperties: false
+      properties:
+        id_medico: { type: string, format: uuid, description: Obrigatório para administrador. }
+        data: { type: string, format: date-time, example: '2026-10-15T17:30:00.000Z' }
+        descricao: { type: string, maxLength: 255, nullable: true, example: Consulta de rotina }
+
+    EdicaoDeConsulta:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        data: { type: string, format: date-time }
+        descricao: { type: string, maxLength: 255, nullable: true }
+
+    Consulta:
+      type: object
+      properties:
+        id_consulta: { type: string, format: uuid }
+        id_medico: { type: string, format: uuid }
+        id_paciente: { type: string, format: uuid, nullable: true }
+        data: { type: string, format: date-time, description: Instante em UTC (ISO 8601). }
+        descricao: { type: string, nullable: true }
+        status:
+          {
+            type: integer,
+            enum: [0, 1, 2, 3],
+            description: '0 Disponível · 1 Agendada · 2 Concluída · 3 Cancelada',
+          }
+        motivo_cancelamento: { type: string, nullable: true }
+        data_cancelamento: { type: string, format: date-time, nullable: true }
+        reagendavel:
+          {
+            type: boolean,
+            description: O solicitante (paciente) pode desfazer o cancelamento desta consulta.,
+          }
+        medico:
+          type: object
+          nullable: true
+          properties:
+            id_usuario: { type: string, format: uuid }
+            nome: { type: string }
+            especialidade: { type: integer, nullable: true }
+        paciente:
+          type: object
+          nullable: true
+          properties:
+            id_usuario: { type: string, format: uuid }
+            nome: { type: string }
+
+    Notificacao:
+      type: object
+      properties:
+        id_notificacao: { type: string, format: uuid }
+        id_consulta: { type: string, format: uuid }
+        lembrete: { type: string }
+        data: { type: string, format: date-time }

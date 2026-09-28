@@ -1,0 +1,5 @@
+# Finais de linha LF em todos os sistemas (o Prettier e o CI esperam LF).
+* text=auto eol=lf
+
+*.png binary
+*.brM3 binary

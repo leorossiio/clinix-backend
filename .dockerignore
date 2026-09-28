@@ -1,0 +1,10 @@
+node_modules
+reports
+coverage
+tests
+docs/historico
+database
+.git
+.env
+*.env
+Jenkinsfile
